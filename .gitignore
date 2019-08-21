@@ -1,0 +1,5 @@
+.DS_Store
+.svn
+build
+key.jks
+version.txt
