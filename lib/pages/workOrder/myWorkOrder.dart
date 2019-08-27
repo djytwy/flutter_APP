@@ -19,7 +19,6 @@ class _MyOrderState extends State<MyOrder> {
 
   int _pageNow = 1;   // 当前页码
   List listData = []; // 接口返回的list数据  
-
   int _count = 0;  // 消息数量                                        
 
   @override
