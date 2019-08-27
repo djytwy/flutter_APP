@@ -36,7 +36,12 @@ dependencies:
   flutter_screenutil: ^0.5.3
   
   flutter_picker: ^1.0.10
-    
+
+  fluttertoast: ^3.1.0
+  flutter_easyrefresh: ^2.0.3
+  shared_preferences: ^0.5.3+4
+  flutter_cupertino_date_picker: ^1.0.12
+  
   # camera: ^0.5.3+1
 
   # The following adds the Cupertino Icons font to your application.

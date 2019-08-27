@@ -31,6 +31,8 @@ class _CustPickerState extends State<CustPicker> {
 
   @override
   Widget build(BuildContext context) {
+    ScreenUtil.instance = ScreenUtil(width: 750, height: 1334)..init(context);  
+    
     return Container(
       child: GestureDetector(
         child: Row(
@@ -52,10 +54,10 @@ class _CustPickerState extends State<CustPicker> {
     );
   }
 
-  void _pickerCallback(context) {
-    widget.pickerCallback(context);
+  void _pickerCallback(context, value) {
+    widget.pickerCallback(context, value);
   }
-
+  
   showPicker(BuildContext context) {
     Picker picker = Picker(
       adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(widget.itemsString)),
@@ -64,14 +66,16 @@ class _CustPickerState extends State<CustPicker> {
       textStyle: const TextStyle(color: Colors.blue),
       selectedTextStyle: TextStyle(color: Colors.red),
       columnPadding: const EdgeInsets.all(8.0),
+      cancelText:'取消',
+      confirmText: '确定',
       onConfirm: (Picker picker, List value) {
-        print(value.toString());
-        print(picker.getSelectedValues());
+        // print(value.toString());                 // 选择的数组的位置
+        // print(picker.getSelectedValues());       // 选择的数据
         result = '';
         for (var index in picker.getSelectedValues()) {
           result += index;
         }
-        _pickerCallback(result);
+        _pickerCallback(result, value);
         setState(() {
           result = result;
         });
