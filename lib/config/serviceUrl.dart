@@ -8,8 +8,8 @@ const servicePath = {
    // 登录接口
   'LoginSubmitData': '/systemconfig/app/doLogin',
   'getAuthority': '/systemconfig/app/getLoginInfo',
-  // 新工单接口
-  'NewWorkOrderData': '/workorder/task/getTaskSurvey',
+  // 工单列表相关接口
+  'workOrderData': '/workorder/task/getTaskSurvey',
   // 工单内容接口
   'getWorkOrderContent': '/workorder/task/getOneTaskInfo',
   'submitWorkOrder': '/workorder/task/conductTask',
@@ -21,5 +21,9 @@ const servicePath = {
   'getFrombyType': '/workorder/task/getFrombyType',
   'getFromByDepartment': '/workorder/task/getFromByDepartment',
   // 获取未读消息的列表
-  'unReadMsg': '/systemconfig/appmsg/queryMsgInfos'
+  'unReadMsg': '/systemconfig/appmsg/queryMsgInfos',
+  // 修改未读消息为已读
+  'changeMsgStatus': '/systemconfig/appmsg/modfiyMsgInfo',
+  // 工单页面
+  'getTaskInfoList': '/workorder/task/getTaskInfoList'
 };

@@ -2,65 +2,206 @@
 import 'package:flutter/material.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 组件
 import './view/ButtonBars.dart';
-import '../workOrder/newWorkOrder.dart';
-
-import '../workOrder/chargeback.dart';
-import '../workOrder/WorkOrderAccept.dart';
+import '../workOrder/workOrderList.dart';
+import '../../services/pageHttpInterface/workOrderList.dart';
+import '../Login.dart';
 
 class MyTask extends StatefulWidget {
-  MyTask({Key key, }) : super(key: key);
+  MyTask({Key key, this.orderID}) : super(key: key);
+  final orderID;
   @override
   _MyTask createState() => _MyTask();
 }
 class _MyTask extends State<MyTask> {
+  var userId; //用户id
   bool _work = false; //工单
   bool _shift = true; //排班
   Map pageData = {
     'workOrderNum': 0,
     'repairNum': 0,
     'drawBackNum': 0,
-    'newWorkOrderNum': 0
+    'newWorkOrderNum': 0,
+    'hangWorkOrderNum': 0
   }; //页面数据
+  int dataNum;
+  // 用户信息
+  String _token = '';
+  String _userName = '';
+  String _postName = '';
+  String _departmentName = '';
+  String _phoneNum = '';
+  // 默认 无权限
+  bool admin = false; //管理员
+  bool repair = false; // 报修
+  bool keepInRepair = false; //维修
   @override
   void initState(){
     super.initState();
-    getInitData();
+    initAuth();
+    _initUserInfo();
+    getLocalStorage('userId').then((data){
+      userId = (data is int) ? data : int.parse(data);
+      getInitData();
+    });
+  }
+  // 初始化权限
+  initAuth() async{
+    Map auth = await getAllAuths();
+    setState(() {
+      admin = auth['admin'];
+      repair = auth['repair'];
+      keepInRepair = auth['keepInRepair'];
+    });
+  }
+  // 获取用户信息
+  _initUserInfo() async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _token = (prefs.getString('token') ?? '');
+    });
+    if (_token != '') {
+      setState(() {
+        _userName = (prefs.getString('userName') ?? '');
+        _postName = (prefs.getString('postName') ?? '');
+        _departmentName = (prefs.getString('departmentName') ?? '');
+        _phoneNum = (prefs.getString('phoneNum') ?? '');
+      });
+    } 
+  }
+  // 退出登录
+  void signOut() async{
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.remove('token');
+    prefs.remove('menus');
+    prefs.remove('userName');
+    prefs.remove('postName');
+    prefs.remove('userId');
+    prefs.remove('departmentName');
+    prefs.remove('phoneNum');
+    Navigator.pop(context);
+    Navigator.pushReplacement(context, MaterialPageRoute(
+      builder: (context) => new Test(
+      )
+    ));
   }
   // 获取初始化数据
   void getInitData(){
-    const data = {
-      'userId': 5,
+    Map data = {
+      'userId': userId,
       'submodelId': 2,
       'msgType': 2, // 类型 1:排班， 2： 工单
       // 'msgStatus': 0  //子状态[100-新工单;101-我的工单;102-报修工单;103-退单]不传的时候取对应的所有
     };
+
     getMyTaskList(data).then((data){
       if(data is Map){
         setState(() {
           pageData = data;
         });
       }
+      getAllData().then((val) {
+        setState(() {
+          pageData["newWorkOrderNum"] = val;
+        });
+      });
     });
   }
-  // 状态改变
-  // void didChangeDependencies(){
-  //   super.didChangeDependencies();
-  //   print('状态改变');
-  // }
- 
   @override
   Widget build(BuildContext context) {
     // 设置 设计图和设备的 宽高比例
     var _adbapt = SelfAdapt.init(context);
+    Widget header = DrawerHeader(
+      padding: EdgeInsets.zero, /* padding置为0 */
+      child: new Stack(children: <Widget>[ /* 用stack来放背景图片 */
+        // new Image.asset(
+        //   'assets/images/background.png', fit: BoxFit.fill, width: double.infinity,),
+        new Align(/* 先放置对齐 */
+          alignment: FractionalOffset.center,
+          child: Container(
+            // height: 100.0,
+            width: 100.0,
+            margin: EdgeInsets.only(left: 12.0, bottom: 12.0),
+            child: new Column(
+              mainAxisSize: MainAxisSize.min, /* 宽度只用包住子组件即可 */
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                new Container(
+                  child: Center(
+                    child: new CircleAvatar(
+                    backgroundImage: AssetImage('assets/images/LOGO.png'),
+                    radius: 35.0,),
+                    ),
+                ),
+                new Container(
+                  margin: EdgeInsets.only(top: 15.0),
+                  child: Center(
+                    child: new Text(this._userName, style: new TextStyle(
+                      fontSize: 16.0,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.white),),
+                  )
+                ),
+              ],),
+          ),
+        ),
+      ]),);
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text('我的任务', style: TextStyle(fontSize: 18),),
         centerTitle: true,
         backgroundColor: Colors.transparent
+      ),
+      drawer: new Drawer(
+        child: new Container(
+          decoration: new BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage("assets/images/background.png"),
+              fit: BoxFit.cover
+            )
+          ),
+          child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            header,  // 上面是自定义的header
+            ListTile(title: Text(this._departmentName,style: TextStyle(color: Color(0xFFffffff))),
+              enabled: false,
+              leading: new CircleAvatar(child: new Text('部门',style: TextStyle(color: Color(0xFFffffff),fontSize: _adbapt.setFontSize(14)),),),
+              onTap: () {
+                Navigator.pop(context);
+              },),
+            ListTile(title: Text(this._phoneNum,style: TextStyle(color: Color(0xFFffffff))),
+              enabled: false,
+              leading: new CircleAvatar(child: new Text('电话',style: TextStyle(color: Color(0xFFffffff),fontSize: _adbapt.setFontSize(14)),),),
+              onTap: () {
+                Navigator.pop(context);
+              },),
+            ListTile(title: Text(this._postName,style: TextStyle(color: Color(0xFFffffff))),
+              enabled: false,
+              leading: new CircleAvatar(
+                child: new Text('职位',style: TextStyle(color: Color(0xFFffffff),fontSize: _adbapt.setFontSize(14)),),),
+              onTap: () {
+                Navigator.pop(context);
+              },),
+            ListTile(title: Text('修改密码',style: TextStyle(color: Color(0xFFffffff))),
+            trailing: Icon(Icons.keyboard_arrow_right,color: Color(0xFFfffffff),),
+            leading: new CircleAvatar(
+              child: new Text('修改',style: TextStyle(color: Color(0xFFffffff),fontSize: _adbapt.setFontSize(14)),),),
+            onTap: () {
+              Navigator.pop(context);
+            },),
+            ListTile(title: Text('退出登录',style: TextStyle(color: Color(0xFFffffff))),
+            leading: new CircleAvatar(
+            child: new Text('退出',style: TextStyle(color: Color(0xFFffffff),fontSize: _adbapt.setFontSize(14)),),),
+            onTap: signOut),
+          ],
+          ),
+        ),
       ),
       body: Container(
             child: Column(
@@ -75,10 +216,10 @@ class _MyTask extends State<MyTask> {
                       Expanded(
                         child: GestureDetector(
                           onTap: (){
-                              setState(() {
-                                _work = false;
-                                _shift = true;
-                              });
+                            setState(() {
+                              _work = false;
+                              _shift = true;
+                            });
                           },
                           child:  Text('工单处理', textAlign: TextAlign.center, style: 
                             TextStyle( 
@@ -112,55 +253,82 @@ class _MyTask extends State<MyTask> {
                   child: Container(
                           child: Column(
                             children: <Widget>[
-                              Container(
-                                height: _adbapt.setHeight(72),
-                                color: Color.fromRGBO(4, 38, 83, 0.35),
-                                margin: EdgeInsets.only(top: _adbapt.setHeight(10)),
-                                child: Row(
-                                  children: <Widget>[
-                                    Expanded(
-                                      child: Container(
-                                        child: GestureDetector(
-                                          onTap: (){
-                                            Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => NewWorkOrder()
-                                                ));
-                                          },
+                              Offstage(
+                                offstage: admin || keepInRepair ? false : true,
+                                child: Container(
+                                    height: _adbapt.setHeight(72),
+                                    color: Color.fromRGBO(4, 38, 83, 0.35),
+                                    margin: EdgeInsets.only(top: _adbapt.setHeight(10)),
+                                    child: Row(
+                                      children: <Widget>[
+                                        Expanded(
                                           child: Center(
-                                            child: Text('新工单', style: TextStyle(color: Color.fromRGBO(171,171,171,1)),),
+                                            child: Container(
+                                              width: _adbapt.setWidth(80),
+                                              child: FlatButton(
+                                                onPressed: (){
+                                                  // 管理员权限不能点击， 维修人 可以展示出来可以点击
+                                                  if (admin && !keepInRepair) {
+                                                      return;
+                                                  }
+                                                  Navigator.push(context, MaterialPageRoute(
+                                                    builder: (context) => WorkOrderList(workOrderType: '0')
+                                                  ));
+                                                },
+                                                child: Text('新工单', style: TextStyle(color: Color.fromRGBO(171,171,171,1)),),
+                                              ),
+                                            )
                                           ),
                                         ),
-                                      )
-                                    ),
-                                    Expanded(
-                                      flex: 0,
-                                      child: Container(
-                                        width: _adbapt.setWidth(1),
-                                        height: _adbapt.setHeight(44),
-                                        color: Color.fromRGBO(76, 135, 179, 1),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Center(
-                                          child: Text(pageData['newWorkOrderNum'].toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: _adbapt.setFontSize(60)),),
+                                        Expanded(
+                                          flex: 0,
+                                          child: Container(
+                                            width: _adbapt.setWidth(1),
+                                            height: _adbapt.setHeight(44),
+                                            color: Color.fromRGBO(76, 135, 179, 1),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Center(
+                                              child: Text(pageData['newWorkOrderNum'].toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: _adbapt.setFontSize(60)),),
+                                            )
                                         )
+                                      ],
                                     )
-                                  ],
-                                )
+                                  ),
                               ),
-                              ButtonBars(title:'我的工单', number: pageData['workOrderNum']),
-                              ButtonBars(title:'我的报修', number:  pageData['repairNum']),
-                              ButtonBars(title:'退单处理', number: pageData['drawBackNum']),
-                              ButtonBars(title:'验收', number: pageData['workOrderNum'], callCback: (){
-                                Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => WorkOrderAccept()
-                                                ));
-                              }),
-                              ButtonBars(title:'退单', number: pageData['workOrderNum'], callCback: (){
-                                Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => Chargeback()
-                                                ));
-                              }),
+                              Offstage(
+                                offstage: !keepInRepair,
+                                child: ButtonBars(title:'我的工单', number: pageData['workOrderNum'],callCback: (){
+                                        Navigator.push(context, MaterialPageRoute(
+                                          builder: (context) => WorkOrderList(userID: userId,workOrderType: "1",)
+                                        ));
+                                    })
+                              ),
+                              Offstage(
+                                offstage: !repair,
+                                child: ButtonBars(title:'我的报修', number:  pageData['repairNum'], callCback: (){
+                                          Navigator.push(context, MaterialPageRoute(
+                                            builder: (context) => WorkOrderList(userID: userId,workOrderType: "2",)
+                                          ));
+                                        })
+                              ),
+                              Offstage(
+                                offstage: !admin,
+                                child: ButtonBars(title:'退单处理', number: pageData['drawBackNum'],callCback: (){
+                                        Navigator.push(context, MaterialPageRoute(
+                                          builder: (context) => WorkOrderList(userID: userId,workOrderType: "3",)
+                                        ));
+                                      }),
+                              ),
+                              Offstage(
+                                offstage: !admin,
+                                child: ButtonBars(title:'挂起工单', number: pageData['hangWorkOrderNum'], callCback: (){
+                                        Navigator.push(context, MaterialPageRoute(
+                                          builder: (context) => WorkOrderList(workOrderType: "4")
+                                        ));
+                                      }),
+                              ),
                             ],
                           ),
                         ),
@@ -174,8 +342,8 @@ class _MyTask extends State<MyTask> {
                         // ButtonBars(title:'我的处理', number: 0,),
                         // Container(
                         //   alignment: Alignment.centerLeft,
-                        //   margin: EdgeInsets.only(left: setWidth(15), top: setHeight(20), bottom: setHeight(10)),
-                        //   child: Text('换班结果', style: TextStyle(color: Color.fromRGBO(224, 224, 224, 1), fontSize: setFontSize(15)),),
+                        //   margin: EdgeInsets.only(left: _adbapt.setWidth(15), top: _adbapt.setHeight(20), bottom: _adbapt.setHeight(10)),
+                        //   child: Text('换班结果', style: TextStyle(color: Color.fromRGBO(224, 224, 224, 1), fontSize: _adbapt.setFontSize(15)),),
                         // ),
                         // ButtonBars(title:'审批中', number:  10,),
                         // ButtonBars(title:'已审批', number:  11,),

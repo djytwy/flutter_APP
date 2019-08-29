@@ -38,3 +38,17 @@ Future getUserList() async {
     return data;
   }
 }
+// 工单概况
+Future getWorkOrderSurvey(params) async {
+  var data = await baseAjax(url:'/workorder/task/getTaskListCount', params: params);
+  if (data != null) {
+    return data;
+  }
+}
+// 根据人获取任务列表
+Future getOneUserTaskList(params) async {
+  var data = await baseAjax(url:'/workorder/task/getOneUserTaskList', params: params);
+  if (data != null) {
+    return data;
+  }
+}

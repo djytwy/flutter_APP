@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:convert';
 import '../../components/picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import '../../utils/util.dart';
 
 class ReportFix extends StatefulWidget {
   ReportFix({Key key}) : super(key: key);
@@ -33,6 +34,7 @@ class _ReportFixState extends State<ReportFix> {
   String grade;             // 优先级
   String people;            // 抄送人
   String camera;            // 是否拍照
+  dynamic userId;            // 用户ID
 
   @override
   void initState() {
@@ -57,6 +59,11 @@ class _ReportFixState extends State<ReportFix> {
     getUserID().then((val) {
       setState(() {
         userIDList = val;
+      });
+    });
+    getLocalStorage('userId').then((val) {
+      setState(() {
+        userId = val;
       });
     });
     super.initState();
@@ -136,12 +143,12 @@ class _ReportFixState extends State<ReportFix> {
       var gradeList = {"高":'3','中':'2','低':'1'};
       var photo = {"是":"1","否":"0"};
       var data = {
-        'sendUserId':'26',       // 测试用户
+        'sendUserId':userId,       // 测试用户
         'taskPlace':placeID,
         'taskPriority':gradeList[grade],
         'taskPhotograph':photo[camera],
         'taskContent':content,
-        'copyUser':[int.parse(people)]
+        'copyUser': people == null ? [] : [int.parse(people)]
       };
 
       postData(data).then((val) {
@@ -152,18 +159,6 @@ class _ReportFixState extends State<ReportFix> {
 
     return Container(
       child: Scaffold(
-        // floatingActionButton:Container(
-        //   child: FlatButton(
-        //     child: Text('提交',style: TextStyle(color: Colors.white)),
-        //     onPressed: (){print('dda');},
-        //   ),
-        //   width: ScreenUtil.getInstance().setWidth(620),
-        //   decoration: BoxDecoration(
-        //     color: Colors.blueAccent,
-        //     borderRadius: BorderRadius.circular(15.0)
-        //   ),
-        // ),
-
         key: _scaffoldKey,
         backgroundColor: Colors.transparent,
         appBar: AppBar(

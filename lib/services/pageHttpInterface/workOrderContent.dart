@@ -43,3 +43,14 @@ Future submitData(data) async {
     return _data;
   }
 }
+
+Future returnBack(data) async {
+  final _data = await baseAjax(
+    url: servicePath["submitWorkOrder"],
+    params: data,
+    method: 'post'
+  );
+  if (_data != null) {
+    return _data;
+  }
+}

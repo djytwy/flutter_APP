@@ -41,6 +41,12 @@ dependencies:
   flutter_easyrefresh: ^2.0.3
   shared_preferences: ^0.5.3+4
   flutter_cupertino_date_picker: ^1.0.12
+  charts_flutter: ^0.7.0
+  jpush_flutter: 
+    git: 
+      url: https://github.com/CaiJingLong/jpush-flutter-plugin.git
+      ref: 4d847f9b2150dc4fd1f8a7620d414d60f464fab7
+
   
   # camera: ^0.5.3+1
 

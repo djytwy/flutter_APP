@@ -1,46 +1,43 @@
+import 'package:app_tims_hotel/pages/home/home.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyrefresh/easy_refresh.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/workOrderItems.dart';
-import '../../services/pageHttpInterface/InTimeWorkOrder.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_picker/flutter_picker.dart';
 import 'package:flutter/src/material/dialog.dart' as Dialog;
+import './view/PrivateDatePrick.dart';
 import 'dart:convert';
+import './workOrderSurvey.dart';
+import '../../services/pageHttpInterface/inTimeWorkOrder.dart';
+import '../../utils/util.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// class PickText extends StatelessWidget {
-//   PickText({
-//     Key key,
-//     this.context
-//     }) : super(key: key);
-//   final context;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: FlatButton(
-//         child: Text('data3'),
-//         onPressed: (){
-//           showPicker(context, gradeString);
-//         },
-//       ),
-//     );
-//   }
-// }
-
+/*
+  taskType :0 -> 及时工单
+            1 -> 巡检工单
+            2 -> 维保工单
+*/
 
 class InTimeWorkOrder extends StatefulWidget {
-  InTimeWorkOrder({Key key, this.orderID}) : super(key: key);
-  final orderID;
+  InTimeWorkOrder({
+    Key key, 
+    this.taskType
+  }) : super(key: key);
+  final taskType;  // 任务类型 (及时工单不显示完成时限)
 
   _InTimeWorkOrderState createState() => _InTimeWorkOrderState();
 }
 
 class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
   EasyRefreshController _controller; // 下拉组件
-  Map warningMap = { 1:'低', 2:'中' ,3:'高'};   // 紧急程度
+  Map warningMap = { 1:'低', 2:'中' ,3:'高', };   // 紧急程度
   List statusList = ['处理中', '新建' ,'已完成', '待验收', '退单中', '无法处理', '挂起'];   // 任务状态列表   
-
+  int flag = -1;
+  int taskState = -1;
+  int paceId = -1;
+  int priority = -1;   // 优先级
+  String userId;
   int _pageNow = 1;   // 当前页码
   List listData = []; // 接口返回的list数据  
 
@@ -51,16 +48,41 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  // 全局的Scoffold的key
 
   String itemsString = '''["全部状态","处理中","已完成","待验收","退回中","无法处理","挂起"]'''; 
-  String floorString = '''["1","2","3","4","5","6","7","8","9"]''';
-  String gradeString = '''["高","中","低"]''';
+  // String floorString = '''["1","2","3","4","5","6","7","8","9"]''';
+  String floorString = '''[
+    {"一楼拐角处":[{"这是一楼":[1,2,3]},{"这是二楼":[""]}]},
+    {"二楼拐角处":[{"这是一一楼":[14,63,35]},{"这是二二楼":[144,243,223]}]}
+  ]''';
+  Object placeIdList;   
+  String gradeString = '''["全部优先级","高","中","低"]''';
 
-  String result;                                  
+  String result;     
+  String items = '全部状态';
+  String floor = '全部楼层';
+  String grade = '全部优先级';   
+
+  bool showExtime = false;    // 及时工单不显示完成时限 
+  String dateString;  // 时间字符串                    
 
   @override
   void initState(){
     super.initState();
-    _getData();
+    getData().then((val) {
+      setState(() {
+        floorString = json.encode(val);
+      });
+    });
+    getPlaceID().then((val) {
+      setState(() {
+        placeIdList = val;
+      });
+    });
     _controller = EasyRefreshController();
+    _getInitParams(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority);
+    if(widget.taskType.toString() != "0") 
+    setState(() {
+      showExtime = true;
+    });
   }
 
   void _overLoad() {
@@ -72,27 +94,43 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
       gravity: ToastGravity.BOTTOM
     );
   }
-
-  void _getData(){
-    // getData(_pageNow).then((data) {
-    //   if(data['total'] <= _count) {
-    //     _overLoad();
-    //   } else {
-    //     setState(() {
-    //       listData += data["data"];
-    //       _count += data["data"].length;
-    //     });
-    //   }
-    // });
+  void _getInitParams(taskType,userId,flag,pageNum,taskState,paceId,priority) async{
+    SharedPreferences prefe = await SharedPreferences.getInstance();
+    if (prefe.getString('authMenus').indexOf('50') != -1) {
+      setState(() {
+        flag = 1;
+      });
+    }
+    getLocalStorage('userId').then((val) {
+      setState(() {
+        userId = val;
+      }); 
+      _getData(taskType,userId,flag,pageNum,taskState,paceId,priority);
+    });
+  }
+  void _getData(taskType,userId,flag,pageNum,taskState,paceId,priority){
+    getOrderData(taskType,userId,flag,pageNum,taskState,paceId,priority).then((data) {
+      setState(() {
+        listData = data['mainInfo']["list"];
+        _count = data['mainInfo']["list"].length;
+      });
+    });
   }
 
   void _refreshData() {
-    // getData(1).then((data) {
-    //   setState(() {
-    //     listData = data["data"];
-    //     _count = data["data"].length;
-    //   });
-    // });
+    getLocalStorage('userId').then((val) {
+      setState(() {
+        userId = val;
+      }); 
+      getLocalStorage('authMenus').then((val) {
+        if(val.toString().indexOf('50') != -1) {
+          setState(() {
+            flag = 1;
+          });
+        }
+        _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+      });
+    });
   }
 
   String _converTime(time){
@@ -128,14 +166,13 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
         appBar: AppBar(
           backgroundColor: Colors.transparent, 
           title: Center(
-            child: Text('即时工单',style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36)))
+            child: Text(
+              widget.taskType == '0' ? '即时工单' : widget.taskType == '1' ? '巡检工单' : '维保工单',
+              style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36)))
           ),
           actions: <Widget>[
             // 时间组件占位
-            Container(
-              width: ScreenUtil.getInstance().setWidth(120),
-              child: Text('')
-            ),
+            PrivateDatePrick(change: _getDataByTime)
           ],
         ),
         body: Center(
@@ -157,12 +194,7 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                       child: FlatButton(
                         textColor: choiceClick == '工单进度'? Colors.lightBlue : Colors.white70,
                         child: Text('工单进度'),
-                        onPressed: (){
-                          setState(() {
-                            choiceClick = '工单进度';
-                          });
-                          print('工单进度');
-                        },
+                        onPressed: (){},
                       ),
                     ),
                     Expanded(
@@ -170,10 +202,9 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                         textColor: choiceClick == '工单概况'? Colors.lightBlue : Colors.white70,
                         child: Text('工单概况'),
                         onPressed: (){
-                          setState(() {
-                            choiceClick = '工单概况';
-                          });
-                          print('工单概况');
+                          Navigator.pushReplacement(context, MaterialPageRoute(
+                              builder: (context) => WorkOrderSurvey(taskType: widget.taskType)
+                            ));
                         },
                       ),
                     )
@@ -187,7 +218,7 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                         children: <Widget>[
                           Center(
                             child: FlatButton(
-                              child: Text('全部状态', style: TextStyle(color: Colors.white70)),
+                              child: Text(this.items, style: TextStyle(color: Colors.white70)),
                               onPressed: (){
                                 showPicker(context, itemsString);
                               },
@@ -207,7 +238,13 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                         children: <Widget>[
                           Center(
                             child: FlatButton(
-                              child: Text('全部楼层', style: TextStyle(color: Colors.white70)),
+                              child: Container(
+                                width: setWidth(120),
+                                child: Text(this.floor, 
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(color: Colors.white70)),
+                              ),
                               onPressed: (){
                                 showPicker(context, floorString);
                               },
@@ -227,7 +264,7 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                         children: <Widget>[
                           Center(
                             child: FlatButton(
-                              child: Text('全部优先级', style: TextStyle(color: Colors.white70)),
+                              child: Text(this.grade, style: TextStyle(color: Colors.white70)),
                               onPressed: (){
                                 showPicker(context, gradeString);
                               },
@@ -253,13 +290,16 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                   child: ListView.builder(
                     itemCount: _count,
                     itemBuilder: (context, index) {
+                      var listData2 = listData;
                       return WorkOrderItem(
                         waringMsg:warningMap[listData[index]["priority"]],
                         content: listData[index]["taskContent"],
                         fontSize: fontSize,
-                        place: listData[index].containsKey("areaName") ? listData[index]["areaName"]: '无',
-                        status: statusList[listData[index]["taskNowState"]],
+                        place: listData2[index].containsKey("areaName") ? listData[index]["areaName"]: '无',
+                        status: statusList[listData[index]["taskState"]],
                         time: _converTime(listData[index]["addTime"]),
+                        orderID: listData[index]["ID"],
+                        showExtime: showExtime,
                       );
                     },
                   ),
@@ -272,9 +312,34 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
     );
   }
 
-  showPicker(BuildContext context, String itemsString) {
+  void _getDataByTime(dateString) async {
+    setState(() {
+      _pageNow = 1;
+    });
+    // 月、日若是一个数则前面加0
+    List _dateList = dateString.split("-");
+    String _dateString = "";
+    for(var item in _dateList) {
+      if(item.length < 2) _dateString = _dateString + "-0" + item;
+      else if (item.length > 3) _dateString += item;
+      else _dateString = _dateString + "-"+item;
+    }
+
+    setState(() {
+      dateString = _dateString;
+    });
+
+    final userId = await getLocalStorage('userId');
+    final _data = await getOrderData(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority,_dateString);
+    setState(() {
+      listData = _data['mainInfo']["list"];
+      _count = _data['mainInfo']["list"].length;
+    });
+  }
+
+  showPicker(BuildContext context, String itemString) {
     Picker picker = Picker(
-      adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(itemsString)),
+      adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(itemString)),
       changeToFirst: true,
       textAlign: TextAlign.center,
       textStyle: const TextStyle(color: Colors.blue),
@@ -286,14 +351,248 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
       onConfirm: (Picker picker, List value) {
         print(value.toString());                 // 选择的数组的位置
         print(picker.getSelectedValues());       // 选择的数据
-        String result = '';
+        String rest = '';
         for (var index in picker.getSelectedValues()) {
-          result += index;
+          rest += index;
+        }
+        print(JsonDecoder().convert(itemsString));
+        if (itemString == itemsString) {
+          setState(() {
+            items = rest;
+          });
+        } else if (itemString == floorString){
+          dynamic temp = placeIdList;
+          for (var i in value) {
+            if (temp is List) {
+              if(temp[i] == "") 
+                break;
+              else 
+                temp = temp[i];
+            } else if (temp is Map) {
+              if(temp.values.toList()[0][i] == "")
+                break;
+              else
+                temp = temp.values.toList()[0][i];
+            }
+          }
+          setState(() {
+            paceId = temp is Map? int.parse(temp.keys.toList()[0]): int.parse(temp);
+            floor = rest;
+          });
+        } else if (itemString == gradeString) {
+          setState(() {
+            grade = rest;
+          });
         }
         // _pickerCallback(result, value);
         setState(() {
-          result = result;
+          result = rest;
         });
+        print(paceId);
+        print(result);
+        print('/////////////////////////////////');
+        if (result == '全部状态') {
+          setState(() {
+            taskState = -1;
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '处理中') {
+          setState(() {
+            taskState = 0;
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '已完成') {
+          setState(() {
+            taskState = 2; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '待验收') {
+          setState(() {
+            taskState = 3; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '退回中') {
+          setState(() {
+            taskState = 4; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '无法处理') {
+          setState(() {
+            taskState = 5; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '挂起') {
+          setState(() {
+            taskState = 6; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '全部优先级') {
+          setState(() {
+            priority = -1; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '高') {
+          setState(() {
+            priority = 3; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '中') {
+          setState(() {
+            priority = 2; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else if (result == '低') {
+          setState(() {
+            priority = 1; 
+          });
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        } else {
+          getLocalStorage('userId').then((val) {
+            setState(() {
+              userId = val;
+            });
+            getLocalStorage('authMenus').then((val) {
+              if (val.toString().indexOf('50') != -1) {
+                setState(() {
+                  flag = 1;
+                });
+              }
+              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+            });
+          });
+        }
       }
     );
     picker.show(_scaffoldKey.currentState);
@@ -304,7 +603,28 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
       setState(() {
         _pageNow += 1;
       });
-      _getData();
+      getLocalStorage('userId').then((val) {
+        setState(() {
+          userId = val;
+        });
+        getLocalStorage('authMenus').then((val) {
+          if (val.toString().indexOf('50') != -1) {
+            setState(() {
+              flag = 1;
+            });
+          }
+          getOrderData(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority).then((data) {
+            if (data['mainInfo']['total'] <= _count) {
+              _overLoad();
+            } else {
+              setState(() {
+                listData += data['mainInfo']["list"];
+                _count += data['mainInfo']["list"].length;
+              });
+            }
+          });
+        });
+      });
     });
   }
 

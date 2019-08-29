@@ -11,13 +11,14 @@ import './view/ImageList.dart';
 import './view/SplitLine.dart';
 
 class WorkOrderAccept extends StatefulWidget {
-  WorkOrderAccept({Key key}) : super(key: key);
+  WorkOrderAccept({Key key, this.orderID}) : super(key: key);
+  final orderID;
   @override
   _WorkOrderAccept createState() => _WorkOrderAccept();
 }
 class _WorkOrderAccept extends State<WorkOrderAccept> {
-  int userId = 5; //用户id
-  int taskId = 16; //工单id
+  var userId; //用户id
+  int taskId; //工单id
   List pictureList = []; //图片列表
   Map pageData = {//页面数据
     'areaName': '', //地点
@@ -34,7 +35,11 @@ class _WorkOrderAccept extends State<WorkOrderAccept> {
   @override
   void initState(){
     super.initState();
-    getInitData();
+    taskId = ( widget.orderID is int) ? widget.orderID : int.parse(widget.orderID);
+    getLocalStorage('userId').then((data){
+      userId = (data is int) ? data : int.parse(data);
+      getInitData();
+    });
   }
   // 初始化 获取数据
   void getInitData(){

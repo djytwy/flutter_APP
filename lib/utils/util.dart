@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import '../components/loading.dart';
 
@@ -25,19 +27,19 @@ void hideLoading(context) async{
   Navigator.pop(context);
 }
 
-
-
-
-
-
 // 显示totast 全部弹出
-void showTotast(String msg){
+void showTotast([String msg, String position = 'center', int second = 1]){
+  Map data = {
+    'top': ToastGravity.TOP,
+    'center': ToastGravity.CENTER,
+    'bottom' : ToastGravity.BOTTOM
+  };
   if (msg != null) {
     Fluttertoast.showToast(
       msg: msg,
       toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.CENTER,
-      timeInSecForIos: 1,
+      gravity: data[position],
+      timeInSecForIos: second,
       backgroundColor: Color.fromRGBO(150, 150, 150, 0.4),
       textColor: Colors.white,
       fontSize: 12
@@ -66,3 +68,32 @@ class SelfAdapt {
     return EdgeInsets.only(left: setWidth(n), right: setWidth(n), top: setHeight(n), bottom: setHeight(n));
   }
 }
+// 获取本地存储
+Future getLocalStorage(String name) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  var userName = await prefs.getString(name);
+  return userName;
+}
+
+// 获取权限
+// 50 -- 管理员， 51 -- 报修，  52 -- 维修， 53 -- 换班申请， 54 -- 排班表展示
+Future getAllAuths() async{
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String  str = await prefs.getString('authMenus'); 
+  List obj = json.decode(str);
+  Map data = {
+    'admin': obj.any((element)=>(element == 50)), // 管理员权限
+    'repair': obj.any((element)=>(element == 51)),// 报修权限
+    'keepInRepair': obj.any((element)=>(element == 52)), // 维修权限
+  };
+  // Map data = {
+  //   'admin': true, // 管理员权限
+  //   'repair': true,// 报修权限
+  //   'keepInRepair': true, // 维修权限
+  // };
+  return data;
+}
+
+
+
+

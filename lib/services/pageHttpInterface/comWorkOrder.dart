@@ -12,3 +12,15 @@ Future unReadMsg(data) async{
     return _data;
   }
 }
+
+// 修改未读消息为已读
+Future changeMsgStatus(data) async {
+  final _data = await baseAjax(
+    url: servicePath["changeMsgStatus"],
+    params: data,
+    method: 'post'
+  );
+  if (_data != null) {
+    return _data;
+  }
+}

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class WorkOrder extends StatefulWidget {
   WorkOrder({Key key}) : super(key: key);
 
@@ -16,7 +17,7 @@ class _WorkOrderState extends State<WorkOrder> {
         backgroundColor: Colors.transparent
       ),
       body: Center(
-        child: Text('工单页面', style: TextStyle(color: Colors.white)),
+        child: Text('data')
       ),
     );
   }

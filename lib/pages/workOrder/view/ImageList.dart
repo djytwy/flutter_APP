@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../utils/util.dart';
+import '../../../config/serviceUrl.dart';
 
 class ImageList extends StatelessWidget {
   ImageList({Key key, this.data}) : super(key: key);
@@ -30,7 +31,7 @@ List<Widget> fillData(data, context){
             child: ClipRRect(
               borderRadius: BorderRadius.circular(3),
               child: Image(
-                image: NetworkImage(item),
+                image: NetworkImage(serviceUrl + item["picUrl"]),
                 width: double.infinity,
                 height: _adapt.setHeight(128),
                 fit: BoxFit.cover,

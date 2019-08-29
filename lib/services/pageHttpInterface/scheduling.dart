@@ -1,6 +1,7 @@
 import "package:dio/dio.dart";
 import 'dart:async';
 import '../../config/serviceUrl.dart';
+import '../../utils/util.dart';
 Dio dio = Dio();
 
 // 测试的接口：
@@ -23,12 +24,20 @@ Future getTaskCount(token,userId,date) async {
     response = await dio.get(baseUrl + servicePath['getTaskCountByTaskType'],queryParameters: {'dateString':date,'userId':userId});
     if(response.statusCode == 200) {
       Map <String,dynamic> data = response.data;
-      var reData = data["datas"];
-      return reData;
+      if(data is Map){
+        if (data['code'] == 2000) {
+          return data['datas'];
+        }else{
+          showTotast(data['error']);
+        }
+      } else {
+        return null;
+      }
     } else {
       throw Exception('接口出错');
     }
   } catch(e) {
+    showTotast('服务器出错或网络连接失败！');
     return print('ERROR:======>$e');
   }
 }
@@ -48,12 +57,20 @@ Future getCountPeople(token,date) async {
     response = await dio.get(baseUrl + servicePath['getOndutyNum'],queryParameters: {'dateString':date});
     if(response.statusCode == 200) {
       Map <String,dynamic> data = response.data;
-      var reData = data["datas"];
-      return reData;
+      if(data is Map){
+        if (data['code'] == 2000) {
+          return data['datas'];
+        }else{
+          showTotast(data['error']);
+        }
+      } else {
+        return null;
+      }
     } else {
       throw Exception('接口出错');
     }
   } catch(e) {
+    showTotast('服务器出错或网络连接失败！');
     return print('ERROR:======>$e');
   }
 }
@@ -73,12 +90,20 @@ Future getOrderSource(token,userId,date) async {
     response = await dio.get(baseUrl + servicePath['getFrombyType'],queryParameters: {'dateString':date,'userId':userId});
     if(response.statusCode == 200) {
       Map <String,dynamic> data = response.data;
-      var reData = data["datas"];
-      return reData;
+      if(data is Map){
+        if (data['code'] == 2000) {
+          return data['datas'];
+        }else{
+          showTotast(data['error']);
+        }
+      } else {
+        return null;
+      }
     } else {
       throw Exception('接口出错');
     }
   } catch(e) {
+    showTotast('服务器出错或网络连接失败！');
     return print('ERROR:======>$e');
   }
 }
@@ -98,12 +123,20 @@ Future getCurrentOrder(token,userId,date) async {
     response = await dio.get(baseUrl + servicePath['getFromByDepartment'],queryParameters: {'dateString':date,'userId':userId});
     if(response.statusCode == 200) {
       Map <String,dynamic> data = response.data;
-      var reData = data["datas"];
-      return reData;
+      if(data is Map){
+        if (data['code'] == 2000) {
+          return data['datas'];
+        }else{
+          showTotast(data['error']);
+        }
+      } else {
+        return null;
+      }
     } else {
       throw Exception('接口出错');
     }
   } catch(e) {
+    showTotast('服务器出错或网络连接失败！');
     return print('ERROR:======>$e');
   }
 }

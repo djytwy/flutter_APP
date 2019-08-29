@@ -10,7 +10,8 @@ import './view/SplitLine.dart';
 
 
 class Chargeback extends StatefulWidget {
-  Chargeback({Key key}) : super(key: key);
+  Chargeback({Key key, this.orderID}) : super(key: key);
+  final orderID;
   @override
   _Chargeback createState() => _Chargeback();
 }
@@ -18,8 +19,8 @@ class Chargeback extends StatefulWidget {
 class _Chargeback extends State<Chargeback> {
 
   List userList = []; //角色列表
-  int userId = 5; //用户id
-  int taskId = 16; //工单id
+  var userId; //用户id
+  int taskId; //工单id
   Map pageData = {//页面数据
     'areaName': '', //地点
     'taskContent': '', // 内容
@@ -34,7 +35,11 @@ class _Chargeback extends State<Chargeback> {
   @override
   void initState(){
     super.initState();
-    getInitData();
+    taskId = (widget.orderID is int) ? widget.orderID : int.parse(widget.orderID);
+    getLocalStorage('userId').then((data){
+      userId = (data is int) ? data : int.parse(data);
+      getInitData();
+    });
   }
   // 初始化 获取数据
   void getInitData(){
@@ -65,61 +70,119 @@ class _Chargeback extends State<Chargeback> {
       context: context,
       builder: (BuildContext context){
         var _adapt = SelfAdapt.init(context);
-        return SingleChildScrollView(
-            child: Container(
-              color: Color.fromRGBO(0, 20, 37, 1),
+        return Container(
+              height: _adapt.setHeight(220),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                    Container(
-                      height: _adapt.setHeight(44),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(7), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                      decoration: new BoxDecoration(
-                        color: Color.fromRGBO(113, 166, 241, 1),
-                        borderRadius: new BorderRadius.all(new Radius.circular(5)),
-                      ),
-                      child: ListTile(
-                          title: Text( '无法处理', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                          onTap: () async {
-                            dispatchSheet(optionType: 8);
-                            Navigator.pop(context);
-                          }
+                  Container(
+                    height: _adapt.setHeight(46),
+                    padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
+                    color: Color.fromRGBO(0,20,37,1),
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: _adapt.setWidth(40),
+                          child: FlatButton(
+                            onPressed: (){
+                              Navigator.pop(context);
+                            },
+                            child: Icon(Icons.close, color: Colors.white),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text('更多', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
                         )
+                      ],
                     ),
-                    Container(
-                      height: _adapt.setHeight(44),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(7), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                      decoration: new BoxDecoration(
-                        color: Color.fromRGBO(113, 166, 241, 1),
-                        borderRadius: new BorderRadius.all(new Radius.circular(5)),
+                  ),
+                  Expanded(
+                    child: Container(
+                      padding: EdgeInsets.only(top: _adapt.setHeight(22)),
+                      color: Color.fromRGBO(0, 20, 37, 1),
+                      child: Column(
+                        children: <Widget>[
+                            Container(
+                              height: _adapt.setHeight(44),
+                              margin: EdgeInsets.only(top: _adapt.setHeight(8), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                              decoration: new BoxDecoration(
+                                color: Color.fromRGBO(113, 166, 241, 1),
+                                borderRadius: new BorderRadius.all(new Radius.circular(5)),
+                              ),
+                              child: ListTile(
+                                  title: Text( '无法处理', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  onTap: () async {
+                                    dispatchSheet(optionType: 8);
+                                    Navigator.pop(context);
+                                  }
+                                )
+                            ),
+                            Container(
+                              height: _adapt.setHeight(44),
+                              margin: EdgeInsets.only(top: _adapt.setHeight(7), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                              decoration: new BoxDecoration(
+                                color: Color.fromRGBO(113, 166, 241, 1),
+                                borderRadius: new BorderRadius.all(new Radius.circular(5)),
+                              ),
+                              child: ListTile(
+                                  title: Text( '挂起', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                                  onTap: () async {
+                                    dispatchSheet(optionType: 9);
+                                    Navigator.pop(context);
+                                  }
+                                )
+                            )
+                        ],
                       ),
-                      child: ListTile(
-                          title: Text( '挂起', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                          onTap: () async {
-                            dispatchSheet(optionType: 9);
-                            Navigator.pop(context);
-                          }
-                        )
-                    )
+                    ),
+                  )
                 ],
-              )
-            )
-        );
+              ),
+          );
       }
     );
   }
   // 列表弹出组件方法
   void pageModalBottomSheet(){
+    var _adapt = SelfAdapt.init(context);
     if (userList.length  > 0) {
       showModalBottomSheet(
         context: context,
         builder: (BuildContext context){
-          return ListView(
-                  children: ListTile.divideTiles(
-                    context: context,
-                    tiles: moreFillData(userList, dispatchSheet, context)
-                  ).toList()
-                );
+          return Container(
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    height: _adapt.setHeight(46),
+                    padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
+                    color: Color.fromRGBO(0,20,37,1),
+                    child: Row(
+                      children: <Widget>[
+                        Container(
+                          width: _adapt.setWidth(40),
+                          child: FlatButton(
+                            onPressed: (){
+                              Navigator.pop(context);
+                            },
+                            child: Icon(Icons.close, color: Colors.white),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text('请选择处理人', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
+                        )
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      children: ListTile.divideTiles(
+                        context: context,
+                        tiles: moreFillData(userList, dispatchSheet, context)
+                      ).toList()
+                    ),
+                  )
+                ],
+              ),
+          );
         }
       );
     }else{
@@ -143,7 +206,6 @@ class _Chargeback extends State<Chargeback> {
       params['optionType'] = optionType;
     } 
     // 派单
-    print(params);
     getdispatchSheet(params).then((data){
       Navigator.pop(context); //操作成功返回
     });

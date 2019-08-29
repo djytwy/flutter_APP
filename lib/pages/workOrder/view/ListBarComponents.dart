@@ -11,9 +11,6 @@ class ListBarComponents extends StatefulWidget {
   final String tel;
   _ListBarComponentsState createState() => _ListBarComponentsState();
 }
-const _White_color = Color.fromRGBO(255, 255, 255, 1);// 白色
-const _White_name_color = Color.fromRGBO(224, 224, 224, 1);// 白色名称颜色
-const _Module_background_color = Color.fromARGB(100, 12, 33, 53);//模块背景色
 class _ListBarComponentsState extends State<ListBarComponents> {
   @override
   Widget build(BuildContext context) {
@@ -43,15 +40,19 @@ class _ListBarComponentsState extends State<ListBarComponents> {
                   child:Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: <Widget>[
-                      InkWell(
-                        focusColor: module_background_color,
-                        highlightColor: module_background_color,
-                        onTap: (){
-                          if (tel != null) {
-                            launch("tel:$tel");
-                          }
-                        },
-                        child: Icon(Icons.call, size: _adapt.setFontSize(18))
+                      Container(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          color: Colors.lightBlue,
+                          onPressed: (){
+                            if (tel != null) {
+                              launch("tel:$tel");
+                            }
+                          },
+                          icon: Icon(
+                            Icons.phone  
+                          ),
+                        ),
                       ),
                       Text('$value',style: TextStyle(color: white_color))
                     ]

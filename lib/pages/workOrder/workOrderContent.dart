@@ -6,6 +6,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/textField.dart';
 import './view/ButtonsComponents.dart';    // 下方两个按钮组件
 import '../../components/uploadImg.dart';  // 图片上传的组件
+import '../../utils/util.dart';
+import './view/ListBarComponents.dart';   // 电话加文字的列表条组件
 
 
 // 预览图片的组件
@@ -56,9 +58,12 @@ class Preview extends StatelessWidget {
   }
 }
 
-
 class WorkOrderContent extends StatefulWidget {
-  WorkOrderContent({Key key}) : super(key: key);
+  WorkOrderContent({
+    Key key,
+    this.orderID
+  }) : super(key: key);
+  final orderID;
 
   _WorkOrderContentState createState() => _WorkOrderContentState();
 }
@@ -66,7 +71,6 @@ class WorkOrderContent extends StatefulWidget {
 class _WorkOrderContentState extends State<WorkOrderContent> {
 
   bool flag = true;   // 是否隐藏完成时限
-  int orderID = 100;      // 工单ID
 
   // 初始化页面数据
   dynamic pageData = {
@@ -94,19 +98,34 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
   }
 
   void _returnOrder() {
-    print('退单');
+    getLocalStorage('userId').then((val) {
+      var data= {
+        "id": widget.orderID,
+        "now_userId": int.parse(val), 
+        "optionType":3, // 3代表申请退单
+      };
+      returnBack(data).then((val) {
+        showTotast('操作成功！');
+        // 路由跳两次
+        Navigator.pop(context);
+        Navigator.popAndPushNamed(context, '/returnBack');
+      });
+    });
   }
 
   void _submit(){
-    var data= {
-      "id":11,
-      "now_userId":22, 
-      "optionType":2, // 2代表已完成
-      "pictureUrlList": uploadImgList,
-      "info": info,
-    };
-    submitData(data).then((val) {
-      print(val);
+    getLocalStorage('userId').then((val) {
+      var data= {
+        "id": widget.orderID,
+        "now_userId": int.parse(val), 
+        "optionType":2, // 2代表已完成
+        "pictureUrlList": uploadImgList,
+        "info": info,
+      };
+      submitData(data).then((val) {
+        showTotast('提交成功！');
+        Navigator.pop(context);
+      });
     });
   }
 
@@ -129,14 +148,17 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
 
   @override
   void initState() {
-    String taskID = '11';
-    String userID = '2';
-    getData(taskID=taskID,userID=userID).then((val) {
-      if(val!=null)
-        setState(() {
-          pageData = val["mainInfo"];
-          flag = val["mainInfo"]["taskType"] != 0 ? true : false;
-        });
+    getLocalStorage('userId').then((val){
+      String userID = val;
+      dynamic taskID = widget.orderID;
+
+      getData(taskID=taskID,userID=userID).then((val) {
+        if(val!=null)
+          setState(() {
+            pageData = val["mainInfo"];
+            flag = val["mainInfo"]["taskType"] != 0 ? true : false;
+          });
+      });
     });
 
     // TODO: implement initState
@@ -197,6 +219,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                     ListItem(title: '地点', content: pageData["areaName"], border: true),
                     ListItem(title: '时间', content: _converTime(pageData["addTime"]),border: true),
                     ListItem(title: '报修人', content: pageData["sendUserName"],border: true, phone: false, phoneNum: pageData['sendUserPhone'],),
+                    // ListBarComponents(name:'报修人', value: pageData['sendUserName'], ishidePhone: false, tel: pageData['sendUserPhone']),
                     ListItem(title: '优先级', content: warningMap[pageData["priority"]]),
                   ],
                 )
@@ -246,7 +269,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
               ),
               // 完成时限
               Offstage(
-                offstage: flag,
+                offstage: !flag,
                 child: ListItem(
                   title: '完成时限', 
                   content: pageData.containsKey("anticipatedTime")? pageData["anticipatedTime"].toString() + '天': '暂无',
@@ -254,6 +277,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                 ),
               ),
               ListItem(title: '上次照片', content: '', background: Colors.transparent,marginTop: ScreenUtil.getInstance().setHeight(10)),
+              // 照片预览
               Row(
                 children: <Widget>[
                   Expanded(
@@ -272,6 +296,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                       ),
                     )
                   ),
+                  // 添加照片按钮
                   Container(
                     child: IconButton(
                       color: Colors.white,

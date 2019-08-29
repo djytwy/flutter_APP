@@ -34,7 +34,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="app_tims_hotel"
+        android:label="工单管理系统"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

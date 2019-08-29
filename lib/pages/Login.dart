@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/pageHttpInterface/Login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../pages/home/scheduling.dart';
+import '../main.dart';
+import '../utils/util.dart';
+import '../utils/jPush.dart';
+import 'package:flutter/cupertino.dart';
+
 class Test extends StatefulWidget {
   Test({Key key}) : super(key: key);
 
@@ -18,9 +22,12 @@ class _TestState extends State<Test> {
 
   var _userPassController = new TextEditingController();
   var _userNameController = new TextEditingController();
+  var jpush = new Jpush.init();
 
+  @override initState(){
+    super.initState();
+  }
   @override
-  
   Widget build(BuildContext context) {
     final size =MediaQuery.of(context).size;
     final width =size.width;
@@ -42,39 +49,46 @@ class _TestState extends State<Test> {
         "empPwd": _userPassController.text
       };
       SharedPreferences preferences = await SharedPreferences.getInstance();
-      userLogin(data).then((val) {    
+      userLogin(data).then((val) {   
+        print('00000000000000000000000'); 
         print(val);
-        preferences.setString('token', val['datas']['token'].toString()); // 把token存在本地
-        print(preferences.getString('token'));
-        getAuth(val['datas']['token'].toString(),val['datas']['details']['sessionId'].toString()).then((va) {
-          print(va);
-          preferences.setString('authMenus', va['menus'].toString());
-          preferences.setString('userName', va['user']['user_name'].toString());
-          preferences.setString('userId', va['user']['user_id'].toString());
-          preferences.setString('postName', va['user']['post_name'].toString());
-          preferences.setString('departmentName', va['user']['department_name'].toString());
-          preferences.setString('phoneNum', va['user']['phone_no'].toString());
-          setState(() {
-           userInfo['authMenus'] = va['menus'];
-           userInfo['userName'] = va['user']['user_name'];
-           userInfo['userId'] = va['user']['user_id'];
-           userInfo['postId'] = va['user']['post_id'];
-           userInfo['postName'] = va['user']['post_name'];
-           userInfo['departmentId'] = va['user']['department_id'];
-           userInfo['departmentName'] = va['user']['department_name'];
-           userInfo['phoneNum'] = va['user']['phone_no'];
+        print(val['code']);
+        if (val['code'] == 2000) {
+          preferences.setString('token', val['datas']['token'].toString()); // 把token存在本地
+          getAuth(val['datas']['token'].toString(),val['datas']['details']['sessionId'].toString()).then((va) {
+            // 设置别名
+            jpush.setAlias(va['user']['user_id']);
+            // 设置标签
+            jpush.setTags(va['user']['post_id']);
+
+            preferences.setString('authMenus', va['menus'].toString());
+            preferences.setString('userName', va['user']['user_name'].toString());
+            preferences.setString('userId', va['user']['user_id'].toString());
+            preferences.setString('postName', va['user']['post_name'].toString());
+            preferences.setString('departmentName', va['user']['department_name'].toString());
+            preferences.setString('phoneNum', va['user']['phone_no'].toString());
+            setState(() {
+              userInfo['authMenus'] = va['menus'];
+              userInfo['userName'] = va['user']['user_name'];
+              userInfo['userId'] = va['user']['user_id'];
+              userInfo['postId'] = va['user']['post_id'];
+              userInfo['postName'] = va['user']['post_name'];
+              userInfo['departmentId'] = va['user']['department_id'];
+              userInfo['departmentName'] = va['user']['department_name'];
+              userInfo['phoneNum'] = va['user']['phone_no'];
+            });
+            Navigator.pushReplacement(context, MaterialPageRoute(
+              builder: (context) => new MyApp(
+              )
+            ));
           });
-          print(userInfo);
-          print(userInfo['userName']);
-          Navigator.pushReplacement(context, MaterialPageRoute(
-            builder: (context) => new Schdeuling(
-            )
-          ));
-        });
+        } else {
+          print('-------------');
+          showTotast(val['error']);
+        }
       });
     }
-    return new Scaffold(
-      body: Container(
+    return new Container(
         height: height,
         decoration: BoxDecoration(
           image: DecorationImage(
@@ -82,8 +96,10 @@ class _TestState extends State<Test> {
             fit: BoxFit.cover
           )
         ),
-        child: new SingleChildScrollView(
-          child: new Column(
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: new Container(
+            child: new Column(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.start,
               children: <Widget>[
@@ -159,69 +175,23 @@ class _TestState extends State<Test> {
                       // print('我太难了');
                       showDialog(
                         context: context,
-                        builder: (_) => Padding(
-                          padding: EdgeInsets.all(40),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: <Widget>[   
-                              Container(
-                                alignment: Alignment.center,
-                                height: 140.0,
-                                decoration: new BoxDecoration(
-                                  border: new Border.all(width: 1.0, color: Color(0xFF3A84EE)),
-                                  color: Color(0xFF000000),
-                                  borderRadius: BorderRadius.circular(20.0),
-                                ),
-                                child: Column(
-                                  children: <Widget>[
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 8),
-                                      child: Text('提示',
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              decoration: TextDecoration.none)),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 20.0),
-                                      child: Text('请联系物业管理人员进行密码重置',
-                                          style: TextStyle(
-                                              fontSize: 16,
-                                              color: Colors.white,
-                                              decoration: TextDecoration.none)),
-                                    ),
-                                    Padding(
-                                      padding: EdgeInsets.only(top: 20.0),
-                                      child: FlatButton(
-                                          onPressed: () {
-                                            // 关闭 Dialog
-                                            Navigator.pop(_);
-                                          },
-                                          child: Container(
-                                            decoration: new BoxDecoration(
-                                              gradient: LinearGradient(
-                                                colors: <Color>[
-                                                  Color(0xFF0D47A1),
-                                                  Color(0xFF1976D2),
-                                                  Color(0xFF42A5F5),
-                                                ],
-                                              ),
-                                              borderRadius: BorderRadius.circular(6.0),
-                                            ),
-                                            padding: const EdgeInsets.all(10.0),
-                                            child: const Text(
-                                              '确定',
-                                              style: TextStyle(fontSize: 20)
-                                            ),
-                                          )
-                                      ),
-                                    )
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                        builder: (_) => CupertinoAlertDialog(
+                          title: Text('提示'),
+                          content: Text('请联系物业管理员进行密码重置',style: TextStyle(fontSize: 14),),
+                          actions: <Widget>[
+                            CupertinoButton(
+                              child: Text("取消"),
+                              onPressed: () {
+                                Navigator.pop(_);
+                              },
+                            ),
+                            CupertinoButton(
+                              child: Text("确定"),
+                              onPressed: () {
+                                Navigator.pop(_);
+                              },
+                            ),
+                          ],
                         )
                       );
                     },
@@ -251,9 +221,10 @@ class _TestState extends State<Test> {
                   ),
                 )
               ],
+            ),
           ),
-        ),
-      )
-    );
+          resizeToAvoidBottomPadding: false
+        )
+      );
   }
 }

@@ -1,33 +1,84 @@
+import 'package:app_tims_hotel/utils/util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/listItem.dart';
 import '../../components/textLabel.dart';
+import '../../services/pageHttpInterface/detailWorkOrder.dart';
 
 class DetailWordOrder extends StatefulWidget {
   DetailWordOrder({
     Key key, 
-    this.orderID
+    this.orderID,
+    this.showExtime=true   
   }) : super(key: key);
   final orderID;
+  final showExtime;   // 是否显示完成时限
 
   _DetailWordOrderState createState() => _DetailWordOrderState();
 }
 
 class _DetailWordOrderState extends State<DetailWordOrder> {
 
-  String place = '都江堰K23';
-  String time = '2019-06-09 13:56';
-  String people = '唐三(工程部)';
-  String grade = '高优先级';
-  String content = '较为哦豁覅二狗我合格后南方卡瓦尼氛围就我跟我价位高我我今晚一骨灰盒监管科热计量高科技或过热海贵人';
-  String complete = '5天';
-  int orderID;
+  String reportPeople = '暂无';   // 报修人
+  String copyPeople = '暂无';   // 抄送人
+  String handlePost = '总经理';         // 处理岗位
+  String handlePeople =  '华阳吴亦凡';    // 处理人
+  String grade = '高优先级';  // 优先级
+  String content = '暂无';  //  内容
+  String complete = '5天';  // 完成时限
+  String handlePhone = '10086';  // 处理人电话
+  String reportPhone = '10086';  // 报修人电话
+  String status = "";  // 任务状态
+  String day = "天"; // 完成时限
+
+  Map statusMap = {"0": "处理中", "1": "新建" ,"2":"已完成", "3":"待验收", "4":"退单中", "5":"无法处理", "6":"挂起"};
+  Map gradeMap = {"1":"低优先级","2":"中优先级","3":"高优先级"};
+
+  dynamic orderID;
+  List picList = [];
 
   @override
   void initState() {
     // TODO: implement initState
     orderID = widget.orderID;
+    _getData();
     super.initState();
+  }
+
+  void _getData(){
+    getLocalStorage('userId').then((userId) async {
+      dynamic _reData = await getData(orderID, userId);
+      String _copyPeople = "";
+      dynamic _picList = [];
+      String _day = '未知';
+
+      for(var item in _reData["mainInfo"]["copyUserList"]) {
+        _copyPeople += item;
+      }
+
+      if(_reData["taskPictureInfo"] is List ) {
+        _picList = _reData["taskPictureInfo"].map((v) => "https://tesing.china-tillage.com"+v.toString());
+      }
+
+      if(_reData["mainInfo"].containsKey("anticipatedTime")) {
+        _day = _reData["mainInfo"]["anticipatedTime"].toString() + day;
+      }
+ 
+      setState(() {
+        picList = _picList.toList();   // 图片列表
+        reportPeople = _reData["mainInfo"]["sendUserName"];   // 报修人
+        copyPeople = _copyPeople;   // 抄送人
+        handlePost = _reData["mainInfo"]["handleRoleName"];         // 处理岗位
+        handlePeople = _reData["mainInfo"]["handleUserName"];    // 处理人
+        grade = gradeMap[_reData["mainInfo"]["priority"].toString()];  // 优先级
+        content = _reData["mainInfo"]["taskContent"];  //  内容
+        complete = _reData["mainInfo"]["sendUserName"];  // 完成时限
+        handlePhone = _reData["mainInfo"]["handleUserPhone"]; // 处理人电话
+        reportPhone = _reData["mainInfo"]["sendUserPhone"]; // 报修人电话
+        status = statusMap[_reData["mainInfo"]["taskState"].toString()];   // 任务状态
+        day = _day;  // 完成时限
+      });
+    });
   }
 
   List<Widget> Boxs(length) => List.generate(length, (index) {
@@ -39,7 +90,7 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
       width: ScreenUtil.getInstance().setWidth(360),
       height: ScreenUtil.getInstance().setHeight(270),
       alignment: Alignment.center,
-      child: Image.network('https://cdn.jsdelivr.net/gh/flutterchina/website@1.0/images/flutter-mark-square-100.png'),
+      child: Image.network(picList[index]),
     );
   }); 
 
@@ -79,16 +130,20 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
                       children: <Widget>[
                         Container(
                           child: TextLable(
-                            broderColor: Color.fromARGB(255, 239, 111, 111), 
-                            text: '优先级高', 
-                            bgcolor: Color.fromARGB(120, 82, 52, 56)
+                            broderColor: grade == "高优先级" ? Color.fromARGB(255, 239, 111, 111):
+                                         grade == "中优先级" ? Colors.yellowAccent[300]:
+                                         Colors.greenAccent[400],
+                            text: grade, 
+                            bgcolor: grade == "高优先级" ? Color.fromARGB(120, 82, 52, 56):
+                                     grade == "中优先级" ? Colors.yellow:
+                                     Colors.green[900],
                           ),
                         ),
                         Expanded(
                           child: TextLable(
                             align: 'right',
                             broderColor: Color.fromARGB(255, 142, 245, 108), 
-                            text: '已完成', 
+                            text: status, 
                             bgcolor: Color.fromARGB(255, 42, 83, 57)
                           ),
                         )
@@ -98,10 +153,10 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
                       height: 100.0,
                       child: Text('进度条占位', style: TextStyle(color: Colors.white)),
                     ),
-                    ListItem(title: '报修人', content: place, border: true, phone: false, phoneNum: '10086',),
-                    ListItem(title: '抄送人', content: time,border: true),
-                    ListItem(title: '处理岗位', content: people,border: true,),
-                    ListItem(title: '处理人', content: grade, phone: false, phoneNum: '10086'),
+                    ListItem(title: '报修人', content: reportPeople, border: true, phone: false, phoneNum: reportPhone,),
+                    ListItem(title: '抄送人', content: copyPeople,border: true),
+                    ListItem(title: '处理岗位', content: handlePost,border: true,),
+                    ListItem(title: '处理人', content: handlePeople, phone: false, phoneNum: handlePhone),
                     Container(
                       margin: EdgeInsets.fromLTRB(
                         0.0,
@@ -125,12 +180,15 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
                         ],
                       ),
                     ),
-                    ListItem(title: '完成时限', content: '5天',color: Colors.greenAccent),
+                    Offstage(
+                      offstage: !widget.showExtime,
+                      child: ListItem(title: '完成时限', content: day,color: Colors.greenAccent),
+                    ),
                     Container(
                       child: Wrap(
                         spacing: 10,
                         runSpacing: 10,
-                        children: Boxs(4),
+                        children: Boxs(picList.length),
                       ),
                       margin: EdgeInsets.fromLTRB(
                         0.0, 

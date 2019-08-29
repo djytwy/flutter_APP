@@ -49,11 +49,12 @@ class ListItem extends StatelessWidget {
       ),
       child: Row(
         children: <Widget>[
-          Container(
-            child: Text(title, textAlign: TextAlign.left,style: TextStyle(color: color != null ? color : Colors.white)),
-          ),
           Expanded(
-            child: Offstage(
+            child: Container(
+              child: Text(title, textAlign: TextAlign.left,style: TextStyle(color: color != null ? color : Colors.white)),
+            ),
+          ),
+          Offstage(
               offstage: phone,
               child: Container(
                 alignment: Alignment.centerRight,
@@ -61,16 +62,12 @@ class ListItem extends StatelessWidget {
                   color: Colors.lightBlue,
                   onPressed: (){ _service.call(phoneNum);},
                   icon: Icon(
-                    // color:Colors.white,
                     Icons.phone  
                   ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: Text(content, textAlign: TextAlign.right,style: TextStyle(color: color != null ? color : Colors.white)),
-          )
+            Text(content, textAlign: TextAlign.right,style: TextStyle(color: color != null ? color : Colors.white))
         ],
       ),
     );
