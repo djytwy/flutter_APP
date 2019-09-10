@@ -6,9 +6,13 @@ class CustTextField extends StatefulWidget {
     Key key, 
     this.fontSize, 
     this.textCallBack, 
+    this.setText,
+    this.flag=false,
     this.placeHolder
   }) : super(key: key);
   final textCallBack;
+  final flag;
+  dynamic setText;
   double fontSize;
   String placeHolder;
 
@@ -17,17 +21,24 @@ class CustTextField extends StatefulWidget {
 
 class _CustTextFieldState extends State<CustTextField> {
 
+  final _controller = TextEditingController();
+
   @override
   void initState() {
     super.initState();
   }
 
   @override
+  void didUpdateWidget (CustTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if(widget.setText != null && widget.flag) this._controller.text = widget.setText;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // final _controller = TextEditingController();
 
     return TextField(
-      // controller: _controller,
+      controller: _controller,
       decoration: InputDecoration(
         focusColor: Colors.white,
         hoverColor: Colors.white,
@@ -42,8 +53,8 @@ class _CustTextFieldState extends State<CustTextField> {
       //   widget.textCallBack(text);
       // },
       onChanged: (text) {
+        print(text);
         widget.textCallBack(text);
-        // _controller.text = text;
       },
     );
   }

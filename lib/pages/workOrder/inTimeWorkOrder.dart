@@ -5,7 +5,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/workOrderItems.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_picker/flutter_picker.dart';
-import 'package:flutter/src/material/dialog.dart' as Dialog;
 import './view/PrivateDatePrick.dart';
 import 'dart:convert';
 import './workOrderSurvey.dart';
@@ -35,11 +34,11 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
   List statusList = ['处理中', '新建' ,'已完成', '待验收', '退单中', '无法处理', '挂起'];   // 任务状态列表   
   int flag = -1;
   int taskState = -1;
-  int paceId = -1;
+  int placeId = -1;
   int priority = -1;   // 优先级
-  String userId;
-  int _pageNow = 1;   // 当前页码
-  List listData = []; // 接口返回的list数据  
+  String userId;       // 用户Id
+  int _pageNow = 1;    // 当前页码
+  List listData = [];  // 接口返回的list数据  
 
   int _count = 0;  // 消息数量  
 
@@ -48,43 +47,66 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();  // 全局的Scoffold的key
 
   String itemsString = '''["全部状态","处理中","已完成","待验收","退回中","无法处理","挂起"]'''; 
-  // String floorString = '''["1","2","3","4","5","6","7","8","9"]''';
   String floorString = '''[
     {"一楼拐角处":[{"这是一楼":[1,2,3]},{"这是二楼":[""]}]},
     {"二楼拐角处":[{"这是一一楼":[14,63,35]},{"这是二二楼":[144,243,223]}]}
   ]''';
-  Object placeIdList;   
-  String gradeString = '''["全部优先级","高","中","低"]''';
+  Object placeIdList;   // 楼层的ID
+  String gradeString = '''["全部优先级","高","中","低"]''';  // 工单的优先级
 
-  String result;     
+  String result;     // 选择查询条件的结果
   String items = '全部状态';
   String floor = '全部楼层';
   String grade = '全部优先级';   
 
   bool showExtime = false;    // 及时工单不显示完成时限 
   String dateString;  // 时间字符串                    
-
+  // 默认 无权限
+  bool admin = false; //管理员
+  bool repair = false; // 报修
+  bool keepInRepair = false; //维修
   @override
   void initState(){
     super.initState();
+    initAuth();
+    setState(() {
+      dateString = getCurrentDay();
+    });
     getData().then((val) {
+      List list = [];
+      list.add({"全部楼层":[{"":[""]}]});
+      val.forEach((item){
+          list.add(item);
+      });
       setState(() {
-        floorString = json.encode(val);
+        floorString = json.encode(list);
       });
     });
     getPlaceID().then((val) {
       setState(() {
         placeIdList = val;
       });
+      print('=========================');
+      print(placeIdList);
     });
     _controller = EasyRefreshController();
-    _getInitParams(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority);
+    _getInitParams(widget.taskType,userId,flag,_pageNow,taskState,placeId,priority);
     if(widget.taskType.toString() != "0") 
     setState(() {
       showExtime = true;
     });
   }
-
+    // 初始化权限
+  initAuth() async{
+    Map auth = await getAllAuths();
+    setState(() {
+      admin = auth['admin'];
+      repair = auth['repair'];
+      keepInRepair = auth['keepInRepair'];
+    });
+    
+  }
+  // 上拉加载更多的提示
   void _overLoad() {
     Fluttertoast.showToast(
       msg: "已经到底了",
@@ -94,29 +116,37 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
       gravity: ToastGravity.BOTTOM
     );
   }
-  void _getInitParams(taskType,userId,flag,pageNum,taskState,paceId,priority) async{
+  // 获取初始信息
+  void _getInitParams(taskType,userId,flag,pageNum,taskState,placeId,priority) async{
     SharedPreferences prefe = await SharedPreferences.getInstance();
     if (prefe.getString('authMenus').indexOf('50') != -1) {
       setState(() {
         flag = 1;
+      });
+    } else if (repair == true && admin == false && keepInRepair == false) {
+      setState(() {
+        flag = 2;
       });
     }
     getLocalStorage('userId').then((val) {
       setState(() {
         userId = val;
       }); 
-      _getData(taskType,userId,flag,pageNum,taskState,paceId,priority);
+      _getData(taskType,userId,flag,pageNum,taskState,placeId,priority);
     });
   }
-  void _getData(taskType,userId,flag,pageNum,taskState,paceId,priority){
-    getOrderData(taskType,userId,flag,pageNum,taskState,paceId,priority).then((data) {
+  // 查询工单
+  void _getData(taskType,userId,flag,pageNum,taskState,placeId,priority){
+    print('------------------------------');
+    print(placeId);
+    getOrderData(taskType,userId,flag,pageNum,taskState,placeId,priority, dateString).then((data) {
       setState(() {
         listData = data['mainInfo']["list"];
         _count = data['mainInfo']["list"].length;
       });
     });
   }
-
+  // 下拉刷新
   void _refreshData() {
     getLocalStorage('userId').then((val) {
       setState(() {
@@ -127,8 +157,12 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
           setState(() {
             flag = 1;
           });
+        } else if (repair == true && admin == false && keepInRepair == false) {
+          setState(() {
+            flag = 2;
+          });
         }
-        _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
+        _getData(widget.taskType,userId,flag,1,taskState,placeId,priority);
       });
     });
   }
@@ -152,7 +186,6 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
     // 设置 设计图和设备的 宽高比例
     ScreenUtil.instance = ScreenUtil(width: 750, height: 1334, allowFontScaling: true)..init(context);
     double fontSize = ScreenUtil.getInstance().setSp(30);   // 默认字体大小
-
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -165,9 +198,10 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           backgroundColor: Colors.transparent, 
+          centerTitle: true,
           title: Center(
             child: Text(
-              widget.taskType == '0' ? '即时工单' : widget.taskType == '1' ? '巡检工单' : '维保工单',
+              widget.taskType == '0' ? '即时工单' : widget.taskType == '1' ? '巡检工单' : widget.taskType == '2'? '维保工单' : '',
               style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36)))
           ),
           actions: <Widget>[
@@ -198,14 +232,17 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
                       ),
                     ),
                     Expanded(
-                      child: FlatButton(
-                        textColor: choiceClick == '工单概况'? Colors.lightBlue : Colors.white70,
-                        child: Text('工单概况'),
-                        onPressed: (){
-                          Navigator.pushReplacement(context, MaterialPageRoute(
-                              builder: (context) => WorkOrderSurvey(taskType: widget.taskType)
-                            ));
-                        },
+                      child: Offstage(
+                        offstage: !admin,
+                        child: FlatButton(
+                          textColor: choiceClick == '工单概况'? Colors.lightBlue : Colors.white70,
+                          child: Text('工单概况'),
+                          onPressed: (){
+                            Navigator.pushReplacement(context, MaterialPageRoute(
+                                builder: (context) => WorkOrderSurvey(taskType: widget.taskType)
+                              ));
+                          },
+                        ),
                       ),
                     )
                   ]),
@@ -316,27 +353,18 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
     setState(() {
       _pageNow = 1;
     });
-    // 月、日若是一个数则前面加0
-    List _dateList = dateString.split("-");
-    String _dateString = "";
-    for(var item in _dateList) {
-      if(item.length < 2) _dateString = _dateString + "-0" + item;
-      else if (item.length > 3) _dateString += item;
-      else _dateString = _dateString + "-"+item;
-    }
-
     setState(() {
-      dateString = _dateString;
+      dateString = dateString;
     });
 
     final userId = await getLocalStorage('userId');
-    final _data = await getOrderData(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority,_dateString);
+    final _data = await getOrderData(widget.taskType,userId,flag,_pageNow,taskState,placeId,priority, dateString);
     setState(() {
       listData = _data['mainInfo']["list"];
       _count = _data['mainInfo']["list"].length;
     });
   }
-
+  // 显示筛选条件的弹窗
   showPicker(BuildContext context, String itemString) {
     Picker picker = Picker(
       adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(itemString)),
@@ -361,243 +389,128 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
             items = rest;
           });
         } else if (itemString == floorString){
+        if (rest == '全部楼层') {
+          setState(() {
+            placeId = -1;
+            floor = rest;
+          });
+        } else {
           dynamic temp = placeIdList;
-          for (var i in value) {
-            if (temp is List) {
-              if(temp[i] == "") 
-                break;
-              else 
-                temp = temp[i];
-            } else if (temp is Map) {
-              if(temp.values.toList()[0][i] == "")
-                break;
-              else
-                temp = temp.values.toList()[0][i];
+          if(value == [0,0,0]) {
+            // 全部楼层
+          } else {
+            value[0] -= 1;
+            for (var i in value) {
+              if (temp is List) {
+                if(temp[i] == "") 
+                  break;
+                else 
+                  temp = temp[i];
+              } else if (temp is Map) {
+                if(temp.values.toList()[0][i] == "")
+                  break;
+                else
+                  temp = temp.values.toList()[0][i];
+              }
             }
           }
           setState(() {
-            paceId = temp is Map? int.parse(temp.keys.toList()[0]): int.parse(temp);
+            placeId = temp is Map? int.parse(temp.keys.toList()[0]): int.parse(temp);
             floor = rest;
           });
+        }
+ 
         } else if (itemString == gradeString) {
           setState(() {
             grade = rest;
           });
         }
-        // _pickerCallback(result, value);
         setState(() {
           result = rest;
         });
-        print(paceId);
-        print(result);
-        print('/////////////////////////////////');
         if (result == '全部状态') {
           setState(() {
             taskState = -1;
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '处理中') {
           setState(() {
             taskState = 0;
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '已完成') {
           setState(() {
             taskState = 2; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '待验收') {
           setState(() {
             taskState = 3; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '退回中') {
           setState(() {
             taskState = 4; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '无法处理') {
           setState(() {
             taskState = 5; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '挂起') {
           setState(() {
             taskState = 6; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '全部优先级') {
           setState(() {
             priority = -1; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '高') {
           setState(() {
             priority = 3; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '中') {
           setState(() {
             priority = 2; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else if (result == '低') {
           setState(() {
             priority = 1; 
           });
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         } else {
-          getLocalStorage('userId').then((val) {
-            setState(() {
-              userId = val;
-            });
-            getLocalStorage('authMenus').then((val) {
-              if (val.toString().indexOf('50') != -1) {
-                setState(() {
-                  flag = 1;
-                });
-              }
-              _getData(widget.taskType,userId,flag,1,taskState,paceId,priority);
-            });
-          });
+          _diffAuth();
         }
       }
     );
     picker.show(_scaffoldKey.currentState);
   }
-
+  // 根据筛选条件查询工单
+  Future _diffAuth() async {
+    getLocalStorage('userId').then((val) {
+      setState(() {
+        userId = val;
+      });
+      getLocalStorage('authMenus').then((val) {
+        if (val.toString().indexOf('50') != -1) {
+          setState(() {
+            flag = 1;
+          });
+        } else if (repair == true && admin == false && keepInRepair == false) {
+          setState(() {
+            flag = 2;
+          });
+        }
+        _getData(widget.taskType,userId,flag,1,taskState,placeId,priority);
+      });
+    });
+  }
+  // 上拉加载更多
   Future _onload() async {
     await Future.delayed(Duration(seconds: 1), () {
       setState(() {
@@ -612,8 +525,12 @@ class _InTimeWorkOrderState extends State<InTimeWorkOrder> {
             setState(() {
               flag = 1;
             });
+          } else if (repair == true && admin == false && keepInRepair == false) {
+            setState(() {
+              flag = 2;
+            });
           }
-          getOrderData(widget.taskType,userId,flag,_pageNow,taskState,paceId,priority).then((data) {
+          getOrderData(widget.taskType,userId,flag,_pageNow,taskState,placeId,priority, dateString).then((data) {
             if (data['mainInfo']['total'] <= _count) {
               _overLoad();
             } else {

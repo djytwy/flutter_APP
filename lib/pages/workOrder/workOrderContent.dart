@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import '../../components/listItem.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/textField.dart';
-import './view/ButtonsComponents.dart';    // 下方两个按钮组件
+import '../../components/ButtonsComponents.dart';    // 下方两个按钮组件
 import '../../components/uploadImg.dart';  // 图片上传的组件
 import '../../utils/util.dart';
-import './view/ListBarComponents.dart';   // 电话加文字的列表条组件
+import '../../utils/eventBus.dart';
+import './chargReason.dart';// 退单原因
 
 
 // 预览图片的组件
@@ -22,7 +23,7 @@ class Preview extends StatelessWidget {
   final File imgFile;   // 图片
   final int index;  // 该图片对应在数组的ID
   final previewCallBack; // 点击×的回调函数
-
+  
   @override
   Widget build(BuildContext context) {
     return imgFile != null ? Container(
@@ -90,27 +91,34 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
   Map warningMap = { 1:'低', 2:'中' ,3:'高'};   // 紧急程度
   List statusList = ['处理中', '新建' ,'已完成', '待验收', '退单中', '无法处理', '挂起'];   // 任务状态列表
   String info;  // 备注   
-
+  bool admin = false; //管理员权限
+  bool repair = false; // 报修权限
   void _getText(content) {
     setState(() {
       info = content;
     });
   }
-
-  void _returnOrder() {
-    getLocalStorage('userId').then((val) {
-      var data= {
-        "id": widget.orderID,
-        "now_userId": int.parse(val), 
-        "optionType":3, // 3代表申请退单
-      };
-      returnBack(data).then((val) {
-        showTotast('操作成功！');
-        // 路由跳两次
-        Navigator.pop(context);
-        Navigator.popAndPushNamed(context, '/returnBack');
-      });
+  // 初始化权限
+  initAuth() async{
+    Map auth = await getAllAuths();
+    setState(() {
+      admin = auth['admin'];
+      repair = auth['repair'];
     });
+  }
+  void _returnOrder() async{
+    var val = await Navigator.push(context, MaterialPageRoute(
+                      builder: (context) => ChargReason(orderID:  widget.orderID)
+                    ));
+    if(val != null){
+      if(admin){
+        // 刷新 换班信息
+        bus.emit("refreshTask");
+      }
+      // 路由跳两次
+      Navigator.pop(context, true);
+      // Navigator.popAndPushNamed(context, '/returnBack');
+    }
   }
 
   void _submit(){
@@ -123,8 +131,13 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
         "info": info,
       };
       submitData(data).then((val) {
+        if(repair){
+          // 刷新 换班信息
+          bus.emit("refreshTask");
+        }
         showTotast('提交成功！');
-        Navigator.pop(context);
+        Navigator.pop(context, true);
+        // Navigator.pushReplacementNamed(context, '/submitWorkOrder');
       });
     });
   }
@@ -148,12 +161,14 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
 
   @override
   void initState() {
+    initAuth();
     getLocalStorage('userId').then((val){
       String userID = val;
       dynamic taskID = widget.orderID;
 
       getData(taskID=taskID,userID=userID).then((val) {
-        if(val!=null)
+
+        if(val!=null || val.containsKey("areaName"))
           setState(() {
             pageData = val["mainInfo"];
             flag = val["mainInfo"]["taskType"] != 0 ? true : false;
@@ -186,7 +201,12 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
   Widget build(BuildContext context) {
     ScreenUtil.instance = ScreenUtil(width: 750, height: 1334, allowFontScaling: true)..init(context);
     double fontSize = ScreenUtil.getInstance().setSp(30);
-
+    //报修人
+    String reporter = pageData['sendUserName'];
+    if(pageData['sendDepartment'] != null){
+      String sendDepartment = pageData['sendDepartment'];
+      reporter = reporter + ' ($sendDepartment)';
+    } 
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -218,8 +238,14 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                   children: <Widget>[
                     ListItem(title: '地点', content: pageData["areaName"], border: true),
                     ListItem(title: '时间', content: _converTime(pageData["addTime"]),border: true),
-                    ListItem(title: '报修人', content: pageData["sendUserName"],border: true, phone: false, phoneNum: pageData['sendUserPhone'],),
-                    // ListBarComponents(name:'报修人', value: pageData['sendUserName'], ishidePhone: false, tel: pageData['sendUserPhone']),
+                    Offstage(
+                      offstage: !pageData.containsKey("sendDepartment") || pageData["sendUserName"] == null,
+                      child: ListItem(
+                        title: '报修人', 
+                        content: reporter,
+                        border: true, phone: false, phoneNum: pageData['sendUserPhone']
+                      ),
+                    ),
                     ListItem(title: '优先级', content: warningMap[pageData["priority"]]),
                   ],
                 )

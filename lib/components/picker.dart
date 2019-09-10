@@ -12,13 +12,19 @@ class CustPicker extends StatefulWidget {
     this.scaffoldKey, 
     this.pickerCallback,
     this.textWidth,
-    this.iconWidth
+    this.iconWidth,
+    this.setData,
+    this.flag=false,
+    this.defaultGrade=false
   }) : super(key: key);
   double textWidth;
   double iconWidth;
   String itemsString;
   final pickerCallback;
   final GlobalKey<ScaffoldState> scaffoldKey;
+  final setData; // 设置的数据
+  final flag;   // 控制标志
+  final defaultGrade; // 工单优先级默认 中 
   
   @override
   _CustPickerState createState() => _CustPickerState();
@@ -28,6 +34,28 @@ class _CustPickerState extends State<CustPicker> {
   final double listSpec = 4.0;
   String stateText;
   String result = '请选择';
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    if(widget.defaultGrade != false) {
+      setState(() {
+        result = '中';
+      });
+    }
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget (CustPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    String text = widget.setData;
+    print('组件更新: $text');
+    if(widget.flag && widget.setData != null) 
+      setState(() {
+        result = widget.setData;
+      });
+  }
 
   @override
   Widget build(BuildContext context) {

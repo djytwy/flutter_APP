@@ -1,7 +1,6 @@
 import 'dart:async';
 import '../../config/serviceUrl.dart';
 import '../ajax.dart';
-import 'dart:io';
 
 Future getData(taskID,userID) async {
   final _data = await baseAjax(

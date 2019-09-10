@@ -7,7 +7,7 @@ import '../../utils/util.dart';
 import './othersWorkOrderList.dart';
 import './inTimeWorkOrder.dart';
 // 私有组件
-import './view/SplitLine.dart';
+import '../../components/SplitLine.dart';
 import './view/PrivateDatePrick.dart';
 
 class WorkOrderSurvey extends StatefulWidget {
@@ -29,6 +29,7 @@ class _WorkOrderSurvey extends State<WorkOrderSurvey> {
     super.initState();
     setState(() {
       taskType = widget.taskType is int ? widget.taskType : int.parse(widget.taskType);
+      dateString = getCurrentDay();
     });
     getInitData();
   }
@@ -131,7 +132,7 @@ class _WorkOrderSurvey extends State<WorkOrderSurvey> {
                                     child: Text('工单进度'),
                                     onPressed: (){
                                       Navigator.pushReplacement(context, MaterialPageRoute(
-                                          builder: (context) => InTimeWorkOrder(taskType: taskType)
+                                          builder: (context) => InTimeWorkOrder(taskType: taskType.toString())
                                         ));
                                     },
                                   ),

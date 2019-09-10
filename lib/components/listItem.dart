@@ -20,7 +20,7 @@ class ListItem extends StatelessWidget {
 
   final title;                  // 每一行的title
   final content;                // 每一行的内容
-  final phone;                  // 电话标志 如果有值的话则可以拨打电话
+  final phone;                  // 电话标志 如果false则显示电话
   final phoneNum;               // 电话号码 电话标志为true时使用
   final color;                  // 字体颜色(完成时限用)
   final border;                 // 是否显示下边框
@@ -55,19 +55,17 @@ class ListItem extends StatelessWidget {
             ),
           ),
           Offstage(
-              offstage: phone,
-              child: Container(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  color: Colors.lightBlue,
-                  onPressed: (){ _service.call(phoneNum);},
-                  icon: Icon(
-                    Icons.phone  
-                  ),
-                ),
+            offstage: phone || content == '暂未处理',
+            child: Container(
+              alignment: Alignment.centerRight,
+              child: IconButton(
+                color: Colors.lightBlue,
+                onPressed: (){ _service.call(phoneNum);},
+                icon: Image(image: new AssetImage('assets/images/phone.png'), width: ScreenUtil.getInstance().setWidth(32),height: ScreenUtil.getInstance().setWidth(32),fit: BoxFit.cover,),
               ),
             ),
-            Text(content, textAlign: TextAlign.right,style: TextStyle(color: color != null ? color : Colors.white))
+          ),
+          Text(content == null ? '暂无' : content, textAlign: TextAlign.right,style: TextStyle(color: color != null ? color : Colors.white))
         ],
       ),
     );

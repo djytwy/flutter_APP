@@ -8,6 +8,8 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'dart:async';
 import '../../utils/util.dart';
 import '../../pages/workOrder/inTimeWorkOrder.dart';
+import '../ModifyPassword.dart';
+import '../../utils/eventBus.dart';
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
 
@@ -74,15 +76,24 @@ class _HomeState extends State<Home> {
   List _orderData = [];
   // 即时工单的数据
   int _currentOrderAll = 0;
-   List _currentOrderData = [];
+  List _currentOrderData = [];
+
+  // 版本号
+  String _version;
+
   @override
   void initState() {
     super.initState();
     _initUserInfo();
+    //监听访问详情事件，来刷新通知消息
+    bus.on("refreshHome", (arg) {
+      _initUserInfo();
+   });
   }
   @override
     void dispose() {
       super.dispose();
+      bus.off("refreshHome");//移除广播监听
   }
   _initUserInfo() async{
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -109,6 +120,8 @@ class _HomeState extends State<Home> {
       getCurrentPeople(_token,nowData);
       getOrderData(_token,_userId,nowData);
       getCurrentOrderData(_token,_userId,nowData);
+      // 初始化版本号
+      _genVersion();
     } else {
       showTotast('您还未登录,1秒之后将跳转到登录页面','center');
       const timeout = const Duration(seconds: 1);
@@ -180,6 +193,7 @@ class _HomeState extends State<Home> {
       )
     ));
   }
+  // 下面的_showDatePicker是需求变更了，暂时注释，勿删！
   void _showDatePicker() {
     DatePicker.showDatePicker(
       context,
@@ -224,6 +238,18 @@ class _HomeState extends State<Home> {
         }
       },
     );
+  }
+  
+  // 生成版本号
+  void _genVersion() {
+    DateTime now = DateTime.now();
+    dynamic version = (now.day + 8).toString();
+    dynamic year = (now.year).toString();
+    dynamic month = (now.month).toString();
+    dynamic day = (now.day).toString();
+    setState(() {
+      _version = '0.0.$version _ $year$month$day';
+    });
   }
   Widget build(BuildContext context) {
     // 图表1的数据信息
@@ -390,36 +416,118 @@ class _HomeState extends State<Home> {
           padding: EdgeInsets.zero,
           children: <Widget>[
             header,  // 上面是自定义的header
-            ListTile(title: Text(this._departmentName,style: TextStyle(color: Color(0xFFffffff))),
+            ListTile(
+              title: Container(
+                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),top: setHeight(20),bottom: setHeight(10)),
+                color: Color.fromRGBO(4, 38, 83, 0.35),
+                height: setHeight(45),
+                child: Row(
+                  children: <Widget>[
+                    new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text('部门',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
+                    ),
+                     new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text(this._departmentName,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
+                    )
+                  ],
+                )
+              ),
               enabled: false,
-              leading: new CircleAvatar(child: new Text('部门',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(14)),),),
               onTap: () {
                 Navigator.pop(context);
-              },),
-            ListTile(title: Text(this._phoneNum,style: TextStyle(color: Color(0xFFffffff))),
+              },
+            ),
+            ListTile(
+              title: Container(
+                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
+                color: Color.fromRGBO(4, 38, 83, 0.35),
+                height: setHeight(45),
+                child: Row(
+                  children: <Widget>[
+                    new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text('电话',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
+                    ),
+                     new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text(this._phoneNum,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
+                    )
+                  ],
+                )
+              ),
               enabled: false,
-              leading: new CircleAvatar(child: new Text('电话',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(14)),),),
               onTap: () {
                 Navigator.pop(context);
-              },),
-            ListTile(title: Text(this._postName,style: TextStyle(color: Color(0xFFffffff))),
+              },
+            ),
+            ListTile(
+              title: Container(
+                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
+                color: Color.fromRGBO(4, 38, 83, 0.35),
+                height: setHeight(45),
+                child: Row(
+                  children: <Widget>[
+                    new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text('职位',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
+                    ),
+                     new Padding(
+                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                      child: new Text(this._postName,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
+                    )
+                  ],
+                )
+              ),
               enabled: false,
-              leading: new CircleAvatar(
-                child: new Text('职位',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(14)),),),
               onTap: () {
                 Navigator.pop(context);
-              },),
-            ListTile(title: Text('修改密码',style: TextStyle(color: Color(0xFFffffff))),
-            trailing: Icon(Icons.keyboard_arrow_right,color: Color(0xFFfffffff),),
-            leading: new CircleAvatar(
-              child: new Text('修改',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(14)),),),
-            onTap: () {
-              Navigator.pop(context);
-            },),
-            ListTile(title: Text('退出登录',style: TextStyle(color: Color(0xFFffffff))),
-            leading: new CircleAvatar(
-            child: new Text('退出',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(14)),),),
-            onTap: signOut),
+              },
+            ),
+            ListTile(
+              title: GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (context) => new ModifyPassword()
+                  ));
+                },
+                child: Container(
+                  margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
+                  color: Color.fromRGBO(4, 38, 83, 0.35),
+                  height: setHeight(45),
+                  child: Row(
+                    children: <Widget>[
+                      new Padding(
+                        padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
+                        child: new Text('修改密码',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
+                      ),
+                      new Padding(
+                        padding: EdgeInsets.only(left: setHeight(100)),
+                        child: Icon(Icons.keyboard_arrow_right,color: Color(0xFF999999),),
+                      )
+                    ],
+                  )
+                ),
+              )
+            ),
+            ListTile(
+              title: GestureDetector(
+                 onTap: signOut,
+                 child: Container(
+                    margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),top: setHeight(90)),
+                    color: Color.fromRGBO(4, 38, 83, 0.35),
+                    height: setHeight(45),
+                    child: new Center(
+                      child: new Text('退出登录',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
+                    )
+                  ),
+              )
+             ),
+            Container(
+              margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(160)),
+              child: Text('版本号: $_version',style:TextStyle(color:Colors.white54)),
+            )
           ],
           ),
         ),
@@ -461,7 +569,8 @@ class _HomeState extends State<Home> {
                                             child: Container(
                                               child: GestureDetector(
                                                 child: Center(
-                                                  child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),)
+                                                  // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),)
+                                                  child: Image.asset('assets/images/people.png'),
                                                 ),
                                               ),
                                             ),
@@ -510,7 +619,8 @@ class _HomeState extends State<Home> {
                                       Expanded(
                                         child: Container(
                                           child: Center(
-                                            child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
+                                            // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
+                                            child: Image.asset('assets/images/now.png',width: setWidth(54),height: setHeight(54),),
                                           ),
                                         ),
                                       ),
@@ -626,7 +736,8 @@ class _HomeState extends State<Home> {
                                       Expanded(
                                         child: Container(
                                           child: Center(
-                                            child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
+                                            // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
+                                            child: Image.asset('assets/images/bao.png',width: setWidth(54),height: setHeight(54),),
                                           ),
                                         ),
                                       ),

@@ -25,5 +25,10 @@ const servicePath = {
   // 修改未读消息为已读
   'changeMsgStatus': '/systemconfig/appmsg/modfiyMsgInfo',
   // 工单页面
-  'getTaskInfoList': '/workorder/task/getTaskInfoList'
+  'getTaskInfoList': '/workorder/task/getTaskInfoList',
+  'uploadVoice': '/workorder/task/analysisString',
+  // 获取抄送人列表
+  'getCopierList': '/workorder/imsUserInfo/getUserListByDeparment',
+  // 获取默认抄送人
+  'getDefaulttCopierList': '/workorder/imsUserInfo/getCopyUserList'
 };

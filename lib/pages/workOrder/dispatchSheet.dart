@@ -3,21 +3,24 @@ import 'package:flutter/material.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
 // 组件
-import './view/ListBarComponents.dart';
-import './view/ButtonsComponents.dart';
+import '../../components/ListBarComponents.dart';
+import '../../components/ButtonsComponents.dart';
 import './view/MultipleRowTexts.dart';
-import './view/SplitLine.dart';
+import '../../components/SplitLine.dart';
+import '../../components/NoteEntry.dart';
+
+// eventBus 
+import '../../utils/eventBus.dart';
+
 // 列表页的页面
 import 'package:app_tims_hotel/pages/workOrder/workOrderList.dart';
-// import './MyWorkOrder.dart';
-// import './newWorkOrder.dart';
-
 
 class DispatchSheet extends StatefulWidget {
   DispatchSheet({
     Key key, 
-    this.orderID}) : super(key: key);
+    this.orderID, this.isJPush = false}) : super(key: key);
   final orderID;
+  final bool isJPush;
   @override
   _DispatchSheet createState() => _DispatchSheet();
 }
@@ -230,15 +233,15 @@ class _DispatchSheet extends State<DispatchSheet> {
     // 派单
     getdispatchSheet(params).then((data) async{
       if (optionType == 0) {  //派给自己
+        if (!widget.isJPush) { //如果是推送进来的详情页，就不需要返回上一页
+          bus.emit("refreshTask");
           Navigator.pop(context);
-          Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context){
-            return WorkOrderList(workOrderType: '1', userID: userId);
-          }));
+        }
+        Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context){
+          return WorkOrderList(workOrderType: '1', userID: userId);
+        }));
       } else if (optionType == 1) { // 指派给别人
-          Navigator.pop(context);
-          Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context){
-            return WorkOrderList();
-          }));
+          Navigator.pop(context, true);
       }else{
         Navigator.pop(context);
       }
@@ -254,8 +257,12 @@ class _DispatchSheet extends State<DispatchSheet> {
     String taskPhotoName = taskPhoto == 1 ? '拍照' : taskPhoto == 0 ? '不拍照' : '';
     // 工单号-- 工单id
     int taskId = pageData['ID'];
-
-
+    //报修人
+    String reporter = pageData['sendUserName'];
+    if(pageData['sendDepartment'] != null){
+      String sendDepartment = pageData['sendDepartment'];
+      reporter = reporter + ' ($sendDepartment)';
+    } 
     // 设置 设计图和设备的 宽高比例
     var _adapt = SelfAdapt.init(context);
     
@@ -269,7 +276,7 @@ class _DispatchSheet extends State<DispatchSheet> {
       child: Scaffold(
               backgroundColor: Colors.transparent,
               appBar: AppBar(
-                title: Text('派单',style: TextStyle(fontSize: _adapt.setFontSize(18))),
+                title: Text('工单内容',style: TextStyle(fontSize: _adapt.setFontSize(18))),
                 centerTitle: true,
                 actions: <Widget>[
                   Offstage(
@@ -291,90 +298,70 @@ class _DispatchSheet extends State<DispatchSheet> {
                 ],
                 backgroundColor: Colors.transparent
               ),
-              body: SingleChildScrollView(
-                // padding: EdgeInsets.ronly(bottom: 80),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, //居左
-                  children: <Widget>[
-                    Container( //报修人/抄送人/处理岗位/处理人
-                      child: Column(children: <Widget>[
-                        ListBarComponents(name: '地点', value: pageData['areaName']),
-                        SplitLine(),
-                        ListBarComponents(name: '时间', value: pageData['addTime']),
-                        SplitLine(), 
-                        ListBarComponents(name: '报修人', value: pageData['sendUserName'], ishidePhone: false, tel: pageData['sendUserPhone']),
-                        SplitLine(), 
-                        ListBarComponents(name: '优先级', value: priorityName),
-                      ]),
-                      height: _adapt.setHeight(183),
-                      width: double.infinity,
-                      color: module_background_color,
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
-                    ),
-                    MultipleRowTexts(name:'内容', value: pageData['taskContent']),
-                    Container(
-                      child: Row(children: <Widget>[
-                        Expanded(
-                          child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
-                          flex: 1,
-                        ),
-                        Expanded(
-                          child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
-                          flex: 1,
-                        ),
-                      ]),
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(8)),
-                      color: module_background_color,
-                      width: double.infinity,
-                      height: _adapt.setHeight(45),
-                    ),
-                    Container(// 内容模块
-                      child: 
-                        Column(children: <Widget>[
-                          Text('备注', style: TextStyle(color: white_name_color)),
-                          Container(
-                            child: TextField(
-                              maxLength: 50,
-                              maxLines: 3,
-                              cursorColor: Colors.white, //光标颜色
-                              onChanged: (newValue) {
-                                setState(() {
-                                  info = newValue;
-                                });
-                              },
-                              style: TextStyle(
-                                color: white_color,
-                                fontSize: 14,
+              body: Column(
+                children: <Widget>[
+                  Expanded(
+                    child: SingleChildScrollView(
+                          // padding: EdgeInsets.ronly(bottom: 80),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, //居左
+                            children: <Widget>[
+                              Container( //报修人/抄送人/处理岗位/处理人
+                                child: Column(children: <Widget>[
+                                  ListBarComponents(name: '地点', value: pageData['areaName'] == "" || pageData['areaName'] == null ? "巡检工单" : pageData['areaName']),
+                                  SplitLine(),
+                                  ListBarComponents(name: '时间', value: pageData['addTime']),
+                                  SplitLine(), 
+                                  Offstage(
+                                    offstage: reporter == '' || reporter == null,
+                                    child: ListBarComponents(name: '报修人', value: reporter, ishidePhone: false, tel: pageData['sendUserPhone']),
+                                  ),                                  
+                                  SplitLine(), 
+                                  ListBarComponents(name: '优先级', value: priorityName),
+                                ]),
+                                height: _adapt.setHeight(183),
+                                width: double.infinity,
+                                color: module_background_color,
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
                               ),
-                              decoration: InputDecoration(
-                                  border: InputBorder.none, // 边框样式
-                                  hintText: '请输入备注，最多50字',
-                                  hintStyle: TextStyle(color: Color.fromRGBO(150, 150, 150, 1)),
-                                  helperStyle: TextStyle(color: Color.fromRGBO(150, 150, 150, 1))
+                              MultipleRowTexts(name:'内容', value: pageData['taskContent']),
+                              Container(
+                                child: Row(children: <Widget>[
+                                  Expanded(
+                                    child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
+                                    flex: 1,
+                                  ),
+                                  Expanded(
+                                    child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
+                                    flex: 1,
+                                  ),
+                                ]),
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(8)),
+                                color: module_background_color,
+                                width: double.infinity,
+                                height: _adapt.setHeight(45),
+                              ),
+                              NoteEntry(change: (value){ //备注
+                                setState(() {
+                                  info = value;
+                                });
+                              },),
+                              Container(
+                                child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(19), bottom: _adapt.setHeight(20)),
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15)),
                               )
-                            )
-                          ),
-                        ],
-                        crossAxisAlignment: CrossAxisAlignment.start
-                      ),
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15), top: _adapt.setHeight(15), bottom: _adapt.setHeight(15)),
-                      width: double.infinity,
-                      color: module_background_color,
-                      margin: EdgeInsets.only(top: _adapt.setHeight(8)),
-                    ),
-                    Container(
-                      child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(19)),
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15)),
-                    ),
-                    ButtonsComponents(leftShow: admin, rightShow: keepInRepair,  leftName: '派给别人', rightName: '派给我' ,cbackLeft: pageModalBottomSheet, cbackRight: (){dispatchSheet(optionType: 0);})
-                ]
+                          ]
+                        )
+                      )
+                  ),
+                  ButtonsComponents(leftShow: admin, rightShow: keepInRepair,  leftName: '派给别人', rightName: '派给我' ,cbackLeft: pageModalBottomSheet, cbackRight: (){dispatchSheet(optionType: 0);})
+                ],
               )
-            )
           ),
-    );
+      );
   }
 }
   // 遍历 数据，填充  --更多列表

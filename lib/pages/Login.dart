@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/pageHttpInterface/Login.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main.dart';
+import '../index.dart';
 import '../utils/util.dart';
 import '../utils/jPush.dart';
 import 'package:flutter/cupertino.dart';
@@ -78,7 +78,7 @@ class _TestState extends State<Test> {
               userInfo['phoneNum'] = va['user']['phone_no'];
             });
             Navigator.pushReplacement(context, MaterialPageRoute(
-              builder: (context) => new MyApp(
+              builder: (context) => new Index(
               )
             ));
           });
@@ -117,7 +117,7 @@ class _TestState extends State<Test> {
                     decoration: new InputDecoration(
                       hintText: "请输入用户名",
                       hintStyle: new TextStyle(fontSize: 16.0, color: Colors.white),
-                      prefixIcon: new Icon(Icons.people,color: Colors.white),
+                      prefixIcon: new Icon(Icons.person,color: Colors.white),
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(
                           color: Color(0xFF637EA5), 
@@ -144,7 +144,7 @@ class _TestState extends State<Test> {
                     decoration: new InputDecoration(
                       hintText: "请输入用户密码",
                       hintStyle: new TextStyle(fontSize: 16.0, color: Colors.white),
-                      prefixIcon: new Icon(Icons.people,color: Colors.white),
+                      prefixIcon: new Icon(Icons.lock,color: Colors.white),
                       enabledBorder: UnderlineInputBorder(
                         borderSide: BorderSide(
                           color: Color(0xFF637EA5), //边线颜色为黄色
@@ -172,28 +172,29 @@ class _TestState extends State<Test> {
                       style: new TextStyle(color: Colors.white, fontSize: 16.0),
                     ),
                     onTap: () {
+                      showAlertDialog(context, text: '请联系物业管理人员进行密码重置');
                       // print('我太难了');
-                      showDialog(
-                        context: context,
-                        builder: (_) => CupertinoAlertDialog(
-                          title: Text('提示'),
-                          content: Text('请联系物业管理员进行密码重置',style: TextStyle(fontSize: 14),),
-                          actions: <Widget>[
-                            CupertinoButton(
-                              child: Text("取消"),
-                              onPressed: () {
-                                Navigator.pop(_);
-                              },
-                            ),
-                            CupertinoButton(
-                              child: Text("确定"),
-                              onPressed: () {
-                                Navigator.pop(_);
-                              },
-                            ),
-                          ],
-                        )
-                      );
+                      // showDialog(
+                      //   context: context,
+                      //   builder: (_) => CupertinoAlertDialog(
+                      //     title: Text('提示'),
+                      //     content: Text('请联系物业管理员进行密码重置',style: TextStyle(fontSize: 14),),
+                      //     actions: <Widget>[
+                      //       CupertinoButton(
+                      //         child: Text("取消"),
+                      //         onPressed: () {
+                      //           Navigator.pop(_);
+                      //         },
+                      //       ),
+                      //       CupertinoButton(
+                      //         child: Text("确定"),
+                      //         onPressed: () {
+                      //           Navigator.pop(_);
+                      //         },
+                      //       ),
+                      //     ],
+                      //   )
+                      // );
                     },
                   ),
                 ),

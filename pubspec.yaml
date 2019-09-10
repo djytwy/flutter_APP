@@ -42,6 +42,8 @@ dependencies:
   shared_preferences: ^0.5.3+4
   flutter_cupertino_date_picker: ^1.0.12
   charts_flutter: ^0.7.0
+  catcher: ^0.2.3
+  event_bus: ^1.1.0
   jpush_flutter: 
     git: 
       url: https://github.com/CaiJingLong/jpush-flutter-plugin.git

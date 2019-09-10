@@ -38,19 +38,29 @@ class _WorkOrderListState extends State<WorkOrderList> {
       setState(() {
         userId = val;
       });
+      _getData(null);
     });
-    _getData(null);
     _controller = EasyRefreshController();
   }
 
   Future _unReadMsg() async {
-    Map params = {
+    var params = {
       "msgIsread": "0",
       "msgType": "2",
       "submodelId": "2",
-      // "userId": userId
+      "userId": userId
     };
-
+    if (widget.workOrderType == '0') { //新工单
+       params['msgStatus'] = '100';
+    }else if (widget.workOrderType == '1') {// 我的工单
+        params['msgStatus'] = '101';
+    }else if(widget.workOrderType == '2'){// 我的报修
+        params['msgStatus'] = '102';
+    }else if(widget.workOrderType == '3'){//退单处理
+        params['msgStatus'] = '103';
+    }else if(widget.workOrderType == '4'){// 挂起
+        params['msgStatus'] = '104';
+    }
     final val = await unReadMsg(params);
     setState(() {
       for(var item in val) {
@@ -74,64 +84,60 @@ class _WorkOrderListState extends State<WorkOrderList> {
   }
 
   void _getData(refresh) async {
-    // 新工单和挂起不需要userID
-    await _unReadMsg();
-    if(widget.workOrderType == '0' || widget.workOrderType == '4') {
-      getData(widget.workOrderType, refresh == null? _pageNow : 1).then((data) {
-        if(data['total'] <= _count) {
-          _overLoad();
-        } else {
-          setState(() {
-            listData += data["list"];
-            _count += data["list"].length;
-            for(var item in listData) {
-              if(idList.contains(item["ID"].toString())) {
-                item["redPoint"] = true;
-                item["msgId"] = msgMap[item["ID"].toString()];
-              } else {
-                item["redPoint"] = false;
-                item["msgId"] = "";
-              }
+    /* 刷新与增加数据的逻辑
+       刷新：refresh = true的时候，刷新就是将当前的页面置为1，请求数据，然后将所有的列表数据赋值为返回的list数据，count赋值为服务器返回的列表长度
+       增加：refresh = null的时候，增加就是将页面的列表数据与服务器返回的列表数据相加，再将count数量加上列表的长度
+    */ 
+    await _unReadMsg(); // 红点消息已读未读
+    // 获取页面数据
+    getData(
+      widget.workOrderType, refresh == null? _pageNow : 1, 
+      widget.workOrderType == '0' || widget.workOrderType == '4'? false : widget.userID).then((data) {
+      if(data['total'] == _count) {
+        setState(() {
+          _count = data['total'];
+        });
+        _overLoad();
+      } else {
+        setState(() {
+          // 刷新和翻页的逻辑
+          refresh == null ? listData += data["list"] : listData = data["list"];
+          _count = listData.length;
+          for(var item in listData) {
+            if(idList.contains(item["ID"].toString())) {
+              item["redPoint"] = true;
+              item["msgId"] = msgMap[item["ID"].toString()];
+            } else {
+              item["redPoint"] = false;
+              item["msgId"] = "";
             }
-          });
-        }
-      });
-    } else {
-      // 需要userID的列表
-      getData(widget.workOrderType, refresh == null? _pageNow : 1, widget.userID).then((data) {
-        if(data['total'] <= _count) {
-          _overLoad();
-        } else {
-          setState(() {
-            listData += data["list"];
-            _count += data["list"].length;
-            for(var item in listData) {
-              if(idList.contains(item)) {
-                item["redPoint"] = true;
-              } else {
-                item["redPoint"] = false;
-              }
-            }
-          });
-        }
-      });
-    }
+          }
+        });
+      }
+    });
   }
 
   void _refreshData() {
     _getData(true);
   }
 
-  String _converTime(time){
+  // 时间转换，将昨天，和今天的显示为昨天，今天，而非 XXXX-MM-DD这种格式
+  String _converTime(time) {
     DateTime _time = DateTime.parse(time);
     final nowDay = DateTime.now();
     final yesterday = nowDay.subtract(Duration(days: 1));
     int hour = _time.hour;
+    int min = _time.minute;
+    String _min = "";
+    if(min < 10){
+      _min = "0$min";
+    }
+    // 秒暂时未用
     int seconds = _time.second;
     if (_time.day == nowDay.day && _time.month == nowDay.month && _time.year == nowDay.year) {
-      return '$hour:$seconds';
+      return min < 10 ? '$hour:$_min' : '$hour:$min';
     } else if (_time.day == yesterday.day && _time.month == yesterday.month && _time.year == yesterday.year) {
-      return '昨天 $hour:$seconds';
+      return min < 10 ? '昨天 $hour:$_min' : '昨天 $hour:$min';
     } else 
       return time;
   }
@@ -160,7 +166,8 @@ class _WorkOrderListState extends State<WorkOrderList> {
               widget.workOrderType.toString() == '2' ? '我的报修':
               widget.workOrderType.toString() == '3' ? '退单处理':
               widget.workOrderType.toString() == '4' ? '挂起' : '错误',
-              style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36)))
+              style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36))
+            )
           ),
           actions: <Widget>[
             Container(
@@ -185,6 +192,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
                     itemCount: _count,
                     itemBuilder: (context, index) {
                       return WorkOrderItem(
+                        statusCallBack: _statusCallBack,
                         waringMsg:warningMap[listData[index]["priority"]],
                         content: listData[index]["taskContent"],
                         fontSize: fontSize,
@@ -205,6 +213,13 @@ class _WorkOrderListState extends State<WorkOrderList> {
         ),
       )
     );
+  }
+
+  void _statusCallBack() {
+    setState(() {
+      _pageNow = 1;
+    });
+    _getData(true);
   }
 
   Future _onload() async {

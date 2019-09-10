@@ -1,26 +1,15 @@
 // 页面的列表按钮
 import 'package:flutter/material.dart';
 import '../../../utils/util.dart';
-
-class ButtonBars extends StatefulWidget {
-  ButtonBars({
-    Key key, 
-    this.title, 
-    this.number = 0, 
-    this.callCback
-  }) : super(key: key);
+class ButtonBars extends StatelessWidget {
+  ButtonBars({ Key key, this.title, this.number = 0, this.callCback }) : super(key: key);
   String title = '';
   int number;
   Function callCback;
-  _ButtonBar createState() => _ButtonBar();
-}
-class _ButtonBar extends State<ButtonBars> {
-  
-
   @override
   Widget build(BuildContext context) {
-    String title = widget.title;
-    int number = widget.number;
+    //  String title = title;
+    // int number = number;
     // 设置 设计图和设备的 宽高比例
     var _adapt = SelfAdapt.init(context);
     return Container(
@@ -34,8 +23,8 @@ class _ButtonBar extends State<ButtonBars> {
       ),
       child: FlatButton(
         onPressed: (){
-          if (widget.callCback is Function) {
-            widget.callCback();
+          if (callCback is Function) {
+            callCback();
           }
         },
         child: Row(

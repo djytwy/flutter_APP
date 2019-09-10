@@ -32,8 +32,8 @@ Future getdispatchSheet(params) async {
   }
 }
 // 用户列表
-Future getUserList() async {
-  var data = await baseAjax(url:'/workorder/taskTemplate/getUserList');
+Future getUserList([params]) async {
+  var data = await baseAjax(url:'/workorder/taskTemplate/getUserList', params: params);
   if (data != null) {
     return data;
   }

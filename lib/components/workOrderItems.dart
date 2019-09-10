@@ -7,6 +7,7 @@ import '../pages/workOrder/workOrderAccept.dart';
 import '../pages/workOrder/chargeback.dart';
 import '../utils/util.dart';
 import '../services/pageHttpInterface/comWorkOrder.dart';      // 红点未读相关
+import '../utils/eventBus.dart';
 
 /*
   列表页跳转详情对应关系：
@@ -64,7 +65,6 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.workOrderType);
     ScreenUtil.instance = ScreenUtil(width: 750, height: 1334, allowFontScaling: true)..init(context);
     return Container(
       margin: EdgeInsets.fromLTRB(
@@ -73,7 +73,7 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
         ScreenUtil.getInstance().setHeight(16),
         ScreenUtil.getInstance().setHeight(16)
       ),
-      padding:EdgeInsets.all(ScreenUtil.getInstance().setHeight(20)),
+      padding:EdgeInsets.fromLTRB(0, 0, ScreenUtil.getInstance().setHeight(20), ScreenUtil.getInstance().setHeight(20)),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(5.0)),
         color: Color.fromARGB(100, 12, 33, 53),
@@ -93,11 +93,16 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
               child: Row(
                 children: <Widget>[
                   Container(
-                    margin: EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(30)),
+                    margin: EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(10)),
+                    height: ScreenUtil.getInstance().setWidth(70),
+                    width: ScreenUtil.getInstance().setWidth(70),
                     alignment: Alignment.topLeft,
-                    child: widget.waringMsg == '高'? Text(widget.waringMsg, style: TextStyle(color: Colors.redAccent)) : 
-                      widget.waringMsg == '中'? Text(widget.waringMsg, style: TextStyle(color: Colors.yellowAccent)):
-                      Text(widget.waringMsg, style: TextStyle(color: Colors.greenAccent)),
+                    decoration: BoxDecoration(
+                      image: new DecorationImage(
+                        alignment: Alignment.topLeft,
+                        image: new AssetImage( widget.waringMsg == '高'? 'assets/images/gdyxjG.png':widget.waringMsg == '中'? 'assets/images/gdyxjZ.png':'assets/images/gdyxjD.png'),  
+                      ),
+                    )
                   ),
                   Expanded(
                     child: Container(
@@ -120,6 +125,7 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
               )
             ),
             Container(
+              padding: EdgeInsets.only(left: ScreenUtil.getInstance().setHeight(20)),
               child: Row(
                 children: <Widget>[
                   Container(
@@ -128,19 +134,20 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                     child: Text(widget.time, textAlign: TextAlign.left ,style: TextStyle(color: Colors.white70, fontSize: widget.fontSize)),
                   ),
                   Expanded(
-                    child: Text(widget.status, textAlign: TextAlign.right,style: TextStyle(color: Colors.greenAccent,fontSize: widget.fontSize))  
+                    child: Text(widget.workOrderType.toString() != '0' ? widget.status: "", textAlign: TextAlign.right,style: TextStyle(color: Colors.greenAccent,fontSize: widget.fontSize))  
                   )
                 ] 
               )
             ),
             Container(
+              padding: EdgeInsets.only(left: ScreenUtil.getInstance().setHeight(20)),
               margin: EdgeInsets.only(right: ScreenUtil.getInstance().setWidth(14)),
               child: Center(
                 child: Text(widget.content, style: TextStyle(color: Colors.white70,fontSize: widget.fontSize)),
               )
             ),
             Container(
-              padding: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(24)),
+              padding: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(24), left: ScreenUtil.getInstance().setHeight(20)),
               alignment: Alignment.centerLeft,
               child: Text(widget.place, style: TextStyle(color: Colors.white,fontSize: widget.fontSize)),
             ),
@@ -152,9 +159,10 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
               _redPoint = false;
             });
             await _changeMsgStatus();
+            bus.emit("refreshTask");
           }
           if (widget.isSkip) {
-            Navigator.push(context, MaterialPageRoute(
+            final _status = await Navigator.push(context, MaterialPageRoute(
               builder: 
                 widget.workOrderType.toString() == '0' ? (context) => DispatchSheet(orderID:widget.orderID) :
                 widget.workOrderType.toString() == '1' ? (context) => WorkOrderContent(orderID:widget.orderID) : 
@@ -164,12 +172,16 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                 // 是否显示时限
                 (context) => DetailWordOrder(orderID:widget.orderID, showExtime: widget.showExtime,)
             ));
+            if(_status != null) {
+              _statusCallBack();
+            }
           }
         },
       )
     );
   }
 
+  // 状态回调，暂时未用上
   void _statusCallBack() {
     widget.statusCallBack();
   }
@@ -187,14 +199,4 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
       return false;
   }
 
-  // Future _changeMsgStatus() async {
-  //   Map params = {
-  //     "operFlag": "3",
-  //     "msgId": widget.msgID
-  //   };
-  //   final reData = await changeMsgStatus(params);
-  //   setState(() {
-      
-  //   });
-  // }
 }

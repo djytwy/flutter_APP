@@ -1,6 +1,9 @@
+import 'package:app_tims_hotel/utils/util.dart';
 import "package:dio/dio.dart";
 import 'dart:async';
 import '../../config/serviceUrl.dart';
+import '../ajax.dart';
+import '../../utils/loading.dart';
 Dio dio = Dio();
 
 // 测试的接口：
@@ -19,13 +22,17 @@ Future userLogin(_data) async {
       'Content-Type': 'application/json',
     };
     dio.options.headers = httpHeader;
+    Loading.show(baseUrl + servicePath['LoginSubmitData']);
     response = await dio.post( baseUrl + servicePath['LoginSubmitData'],data:_data);
+    Loading.cancel(baseUrl + servicePath['LoginSubmitData']);
+    await Future.delayed(Duration(milliseconds: 200));
     if(response.statusCode == 200) {
       return response.data;
     } else {
       throw Exception('接口出错');
     }
   } catch(e) {
+    Loading.cancel(baseUrl + servicePath['LoginSubmitData']);
     return print('ERROR:======>$e');
   }
 }
@@ -43,7 +50,10 @@ Future getAuth(_token,_sessionId) async {
       'Cookie': _sessionId
     };
     dio.options.headers = httpHeader;
+    Loading.show(baseUrl + servicePath['getAuthority']);
     response = await dio.get(baseUrl + servicePath['getAuthority']);
+    Loading.cancel(baseUrl + servicePath['getAuthority']);
+    await Future.delayed(Duration(milliseconds: 200));
     if(response.statusCode == 200) {
       Map <String,dynamic> data = response.data;
       var reData = data["datas"];
@@ -52,7 +62,17 @@ Future getAuth(_token,_sessionId) async {
       throw Exception('接口出错');
     }
   } catch(e) {
+    Loading.cancel(baseUrl + servicePath['getAuthority']);
     return print('ERROR:======>$e');
   }
 }
+// 修改密码
+Future getmodifyPassword(params) async {
+  var data = await baseAjax(url: '/systemconfig/users/modifyPassword', params: params, method: 'post');
+  if (data != null) {
+    showTotast('密码修改成功！');
+    return true;
+  }
+}
+
 

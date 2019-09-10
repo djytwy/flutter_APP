@@ -42,18 +42,19 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
   int pageNum = 1; // 页码
   int pageSize = 10; //每页数量
   int taskState; //状态
-  String status;// 状态
+  String status = '全部状态';// 状态
   String userName = '';
+  bool floatingIsShow = false; //悬浮按钮是否展示
   @override
   void initState(){
     super.initState();
     setState(() {
       userName = widget.userName;
     });
-    getInitData();
+    getPageData();
   }
   // 初始化 获取数据
-  void getInitData(){
+  void getPageData(){
     var data = {
       'userId': widget.userId,
       'pageNum': pageNum,
@@ -91,8 +92,9 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
   datePrickChange(value){
     setState(() {
       dateString = value;
+      pageNum = 1;
     });
-    this.getInitData();
+    this.getPageData();
   }
   // 处理时间
   String _converTime(time){
@@ -114,7 +116,7 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
       setState(() {
         pageNum += 1;
       });
-      this.getInitData();
+      this.getPageData();
     });
   }
   // 刷新
@@ -123,7 +125,7 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
       setState(() {
         pageNum = 1;
       });
-      this.getInitData();
+      this.getPageData();
     });
   }
   @override
@@ -148,32 +150,35 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
                   PrivateDatePrick(change: datePrickChange)
                 ],
               ),
-              floatingActionButton: Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  border: Border.all(width: _adapt.setWidth(1), color: Color.fromRGBO(82, 161, 255, 1)),
-                  borderRadius: BorderRadius.all(new Radius.circular(30.0))
-                ),
+              floatingActionButton: Offstage(
+                offstage: floatingIsShow,
                 child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Color.fromRGBO(6,26,68,0.3),
-                      border: Border.all(width: _adapt.setWidth(3), color: Color.fromRGBO(8, 19, 31, 1)),
-                      borderRadius: BorderRadius.all(new Radius.circular(28.0))
-                    ),
-                    child: FloatingActionButton(
-                      onPressed: (){
-                        _controller.animateTo(.0,
-                            duration: Duration(milliseconds: 200),
-                            curve: Curves.ease
-                        );
-                      },
-                      backgroundColor: Color.fromRGBO(6,26,68,0.3),
-                      child: Icon(Icons.vertical_align_top, color: Color.fromRGBO(82, 161, 255, 1), size: _adapt.setFontSize(40)),
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    border: Border.all(width: _adapt.setWidth(1), color: Color.fromRGBO(82, 161, 255, 1)),
+                    borderRadius: BorderRadius.all(new Radius.circular(30.0))
+                  ),
+                  child: Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Color.fromRGBO(6,26,68,0.3),
+                        border: Border.all(width: _adapt.setWidth(3), color: Color.fromRGBO(8, 19, 31, 1)),
+                        borderRadius: BorderRadius.all(new Radius.circular(28.0))
+                      ),
+                      child: FloatingActionButton(
+                        onPressed: (){
+                          _controller.animateTo(.0,
+                              duration: Duration(milliseconds: 200),
+                              curve: Curves.ease
+                          );
+                        },
+                        backgroundColor: Color.fromRGBO(6,26,68,0.3),
+                        child: Icon(Icons.vertical_align_top, color: Color.fromRGBO(82, 161, 255, 1), size: _adapt.setFontSize(40)),
+                    )
                   )
-                )
+                ),
               ),
               body: Container(
                       child: Column(
@@ -187,7 +192,7 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
                                 children: <Widget>[
                                   Expanded(
                                     flex: 4,
-                                    child: Text('全部状态', style: TextStyle(color: Colors.white70)),
+                                    child: Text(status, style: TextStyle(color: Colors.white70)),
                                   ),
                                   Expanded(
                                     flex: 1,
@@ -199,6 +204,9 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
                                 ]
                               ),
                               onPressed: (){
+                                setState(() {
+                                  floatingIsShow = true;
+                                });
                                 showPicker(context, itemsString);
                               },
                             ),
@@ -231,7 +239,8 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
           )
         );
   }
-  showPicker(BuildContext context, String itemsString) {
+  // 显示选择框
+  void showPicker(BuildContext context, String itemsString) {
     Picker picker = Picker(
       adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(itemsString)),
       changeToFirst: true,
@@ -251,8 +260,14 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
         setState(() {
           status = result;
           taskState = pickData[result];
+          floatingIsShow  = false;
         });
-        this.getInitData();
+        this.getPageData();
+      },
+      onCancel: (){
+        setState(() {
+          floatingIsShow = false;
+        });
       }
     );
     picker.show(_scaffoldKey.currentState);

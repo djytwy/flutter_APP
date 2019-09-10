@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
 // 组件
-import './view/ButtonsComponents.dart';
-import './view/ListBarComponents.dart';
+import '../../components/ButtonsComponents.dart';
+import '../../components/ListBarComponents.dart';
 import './view/MultipleRowTexts.dart';
-import './view/SplitLine.dart';
+import '../../components/SplitLine.dart';
 
 
 class Chargeback extends StatefulWidget {
@@ -18,7 +18,7 @@ class Chargeback extends StatefulWidget {
 
 class _Chargeback extends State<Chargeback> {
 
-  List userList = []; //角色列表
+  List userList = []; //人员列表
   var userId; //用户id
   int taskId; //工单id
   Map pageData = {//页面数据
@@ -207,7 +207,7 @@ class _Chargeback extends State<Chargeback> {
     } 
     // 派单
     getdispatchSheet(params).then((data){
-      Navigator.pop(context); //操作成功返回
+      Navigator.pop(context, true); //操作成功返回
     });
   }
   @override
@@ -222,6 +222,13 @@ class _Chargeback extends State<Chargeback> {
     int taskId = pageData['ID'];
     // 设置 设计图和设备的 宽高比例
     var _adapt = SelfAdapt.init(context);
+
+    //报修人
+    String reporter = pageData['sendUserName'];
+    if(pageData['sendDepartment'] != null){
+      String sendDepartment = pageData['sendDepartment'];
+      reporter = reporter + ' ($sendDepartment)';
+    } 
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -251,55 +258,60 @@ class _Chargeback extends State<Chargeback> {
                 ],
                 backgroundColor: Colors.transparent
               ),
-              body: SingleChildScrollView(
-                // padding: EdgeInsets.ronly(bottom: 80),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start, //居左
-                  children: <Widget>[
-                    Container( //报修人/抄送人/处理岗位/处理人
-                      child: Column(children: <Widget>[
-                        ListBarComponents(name: '地点', value: pageData['areaName']),
-                        SplitLine(),
-                        ListBarComponents(name: '时间', value: pageData['addTime']),
-                        SplitLine(), 
-                        ListBarComponents(name: '报修人', value: pageData['sendUserName'], ishidePhone: false, tel: pageData['sendUserPhone']),
-                        SplitLine(), 
-                        ListBarComponents(name: '优先级', value: priorityName),
-                      ]),
-                      height: _adapt.setHeight(183),
-                      width: double.infinity,
-                      color: module_background_color,
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
-                    ),
-                    MultipleRowTexts(name:'内容', value: pageData['taskContent']),
-                    Container(
-                      child: Row(children: <Widget>[
-                        Expanded(
-                          child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
-                          flex: 1,
+              body:  Column(
+                children: <Widget>[
+                  Expanded(
+                    child: SingleChildScrollView(
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start, //居左
+                            children: <Widget>[
+                              Container( //报修人/抄送人/处理岗位/处理人
+                                child: Column(children: <Widget>[
+                                  ListBarComponents(name: '地点', value: pageData['areaName']),
+                                  SplitLine(),
+                                  ListBarComponents(name: '时间', value: pageData['addTime']),
+                                  SplitLine(), 
+                                  ListBarComponents(name: '报修人', value: reporter, ishidePhone: false, tel: pageData['sendUserPhone']),
+                                  SplitLine(), 
+                                  ListBarComponents(name: '优先级', value: priorityName),
+                                ]),
+                                height: _adapt.setHeight(183),
+                                width: double.infinity,
+                                color: module_background_color,
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
+                              ),
+                              MultipleRowTexts(name:'内容', value: pageData['taskContent']),
+                              Container(
+                                child: Row(children: <Widget>[
+                                  Expanded(
+                                    child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
+                                    flex: 1,
+                                  ),
+                                  Expanded(
+                                    child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
+                                    flex: 1,
+                                  ),
+                                ]),
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(8)),
+                                color: module_background_color,
+                                width: double.infinity,
+                                height: _adapt.setHeight(45),
+                              ),
+                              MultipleRowTexts(name:'退单原因', value: pageData['remarks'] == null ? '': pageData['remarks']),
+                              Container(
+                                child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
+                                margin: EdgeInsets.only(top: _adapt.setHeight(19), bottom: _adapt.setHeight(20)),
+                                padding: EdgeInsets.only(left: _adapt.setWidth(15)),
+                              ),
+                          ]
                         ),
-                        Expanded(
-                          child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
-                          flex: 1,
-                        ),
-                      ]),
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(8)),
-                      color: module_background_color,
-                      width: double.infinity,
-                      height: _adapt.setHeight(45),
                     ),
-                    MultipleRowTexts(name:'退单原因', value: pageData['remarks'] == null ? '': pageData['remarks']),
-                    Container(
-                      child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
-                      margin: EdgeInsets.only(top: _adapt.setHeight(19)),
-                      padding: EdgeInsets.only(left: _adapt.setWidth(15)),
-                    ),
-                    ButtonsComponents(leftName: '驳回', rightName:'同意',cbackRight: pageModalBottomSheet, cbackLeft: (){dispatchSheet(optionType: 5);})
-                ]
+                  ),
+                  ButtonsComponents(leftName: '驳回', rightName:'同意',cbackRight: pageModalBottomSheet, cbackLeft: (){dispatchSheet(optionType: 5);})
+                ],
               )
-            )
           ),
       );
   }

@@ -1,13 +1,6 @@
-import "package:dio/dio.dart";
 import 'dart:async';
 import '../../config/serviceUrl.dart';
 import '../ajax.dart';
-
-Dio dio = Dio();
-// 打包的接口：
-String baseUrl = serviceUrl;
-// 测试的接口：
-// String baseUrl = 'http://192.168.5.70:9090/';
 
 Future getData() async {
   final _data = await baseAjax(url:servicePath['ReportFixData']);
@@ -53,4 +46,17 @@ Future postData(_data) async {
     return _data;
   }
 }
-
+// 获取抄送人列表
+Future getCopierList() async{
+  var data = await baseAjax(url: servicePath['getCopierList']);
+  if (data != null) {
+    return data;
+  }
+}
+// 获取抄送人列表
+Future getDefaulttCopierList() async{
+  var data = await baseAjax(url: servicePath['getDefaulttCopierList']);
+  if (data != null) {
+    return data;
+  }
+}

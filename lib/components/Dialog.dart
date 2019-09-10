@@ -1,99 +1,113 @@
 import 'package:flutter/material.dart';
 import '../pages/workOrder/inTimeWorkOrder.dart';
+import '../utils/util.dart';
 
 void ShowWorkOrder(BuildContext context, backHome) async {
+  var _adapt = SelfAdapt.init(context);
+  final size =MediaQuery.of(context).size;
   // 备用变量
   var k = 'test';
   await showDialog(
     context: context,
     builder: (BuildContext context){
-      return SimpleDialog(
+      return Stack(
         children: <Widget>[
-          ListTile(
-            title: Row(
+          Positioned(
+            top: _adapt.setHeight(size.height / 2 +  60.0),
+            child: SimpleDialog(
+            backgroundColor: Colors.transparent,
               children: <Widget>[
-                new Container(
-                  margin: new EdgeInsets.only(right: 28.0),
-                  child: GestureDetector(
-                    child: Column(
+                  Container(
+                    child: Row(
                       children: <Widget>[
-                        new Container(
-                          child: new Padding(
-                            padding: new EdgeInsets.all(16.0),
-                            child: new Icon(Icons.people),
-                          ),
-                          decoration: new BoxDecoration(
-                            border: new Border.all(width: 2.0, color: Colors.red),
-                            borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-                          ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: (){
+                              k = '及时工单';
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context) => InTimeWorkOrder(taskType:"0")
+                              ));
+                            },
+                            child: Column(
+                              children: <Widget>[
+                                Container(
+                                  width: _adapt.setWidth(65),
+                                  height: _adapt.setWidth(65),
+                                  margin: EdgeInsets.only(bottom: _adapt.setHeight(12)),
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: AssetImage('assets/images/jishiGD.png'),
+                                      fit: BoxFit.cover
+                                    ),
+                                    borderRadius: BorderRadius.all(Radius.circular(5))
+                                  )
+                                ),
+                                Text('及时工单', style: TextStyle(color: white_color, fontSize: _adapt.setFontSize(14)))
+                              ],
+                            ),
+                          )
                         ),
-                        new Text('及时工单')
-                      ],
-                    ),
-                    onTap: (){
-                      k = '及时工单';
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => InTimeWorkOrder(taskType:"0")
-                      ));
-                    },
-                  ),
-                ),
-                new Container(
-                  child: GestureDetector(
-                    child: Column(
-                      children: <Widget>[
-                        new Container(
-                          child: new Padding(
-                            padding: new EdgeInsets.all(16.0),
-                            child: new Icon(Icons.people),
-                          ),
-                          decoration: new BoxDecoration(
-                            border: new Border.all(width: 2.0, color: Colors.red),
-                            borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-                          ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: (){
+                              k = '巡检工单';
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context) => InTimeWorkOrder(taskType:"1")
+                              ));
+                            },
+                            child: Column(
+                              children: <Widget>[
+                                Container(
+                                  width: _adapt.setWidth(65),
+                                  height: _adapt.setWidth(65),
+                                  margin: EdgeInsets.only(bottom: _adapt.setHeight(12)),
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: AssetImage('assets/images/xunjianGD.png'),
+                                      fit: BoxFit.cover
+                                    ),
+                                    borderRadius: BorderRadius.all(Radius.circular(5))
+                                  )
+                                ),
+                                Text('巡检工单', style: TextStyle(color: white_color, fontSize: _adapt.setFontSize(14)))
+                              ],
+                            ),
+                          )
                         ),
-                        new Text('巡检工单')
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: (){
+                              k = '维保工单';
+                              Navigator.push(context, MaterialPageRoute(
+                                builder: (context) => InTimeWorkOrder(taskType:"2")
+                              ));
+                            },
+                            child: Column(
+                              children: <Widget>[
+                                Container(
+                                  width: _adapt.setWidth(65),
+                                  height: _adapt.setWidth(65),
+                                  margin: EdgeInsets.only(bottom: _adapt.setHeight(12)),
+                                  decoration: BoxDecoration(
+                                    image: DecorationImage(
+                                      image: AssetImage('assets/images/weibaoGD.png'),
+                                      fit: BoxFit.cover
+                                    ),
+                                    borderRadius: BorderRadius.all(Radius.circular(5))
+                                  )
+                                ),
+                                Text('维保工单', style: TextStyle(color: white_color, fontSize: _adapt.setFontSize(14)))
+                              ],
+                            ),
+                          )
+                        )
                       ],
-                    ),
-                    onTap: (){
-                      k = '巡检工单';
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => InTimeWorkOrder(taskType:"1")
-                      ));
-                    },
-                  ),
-                  margin: new EdgeInsets.only(right: 28.0),
-                ),
-                new Container(
-                  child: GestureDetector(
-                    child: Column(
-                      children: <Widget>[
-                        new Container(
-                          child: new Padding(
-                            padding: new EdgeInsets.all(16.0),
-                            child: new Icon(Icons.people),
-                          ),
-                          decoration: new BoxDecoration(
-                            border: new Border.all(width: 2.0, color: Colors.red),
-                            borderRadius: new BorderRadius.all(new Radius.circular(10.0)),
-                          ),
-                        ),
-                        new Text('维保工单')
-                      ],
-                    ),
-                    onTap: (){
-                      k = '维保工单';
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => InTimeWorkOrder(taskType:"2")
-                      ));
-                    },
+                    )
                   )
-                ),
-              ],
+              ]
             ),
-          ),
+          )
         ],
-        contentPadding: EdgeInsets.all(0),
       );
     }
   ).then((val) {
