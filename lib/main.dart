@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import './services/ServiceLocator.dart';
 import './utils/jPush.dart';

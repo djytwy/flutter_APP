@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:xfvoice/xfvoice.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceRecognize extends StatefulWidget {
   VoiceRecognize({
@@ -48,6 +49,12 @@ class _VoiceState extends State<VoiceRecognize> {
     voice.setParameter(param.toMap());
   }
 
+  // 申请麦克风权限
+  Future askForPermissions() async {
+    await PermissionHandler().requestPermissions([PermissionGroup.microphone,
+      PermissionGroup.storage, PermissionGroup.reminders]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final _adapt = widget.adapt;
@@ -80,6 +87,15 @@ class _VoiceState extends State<VoiceRecognize> {
           iflyResultString = '';
         });
         _recongize();
+      },
+      onTap: () async {
+        PermissionStatus microphone = await PermissionHandler().checkPermissionStatus(PermissionGroup.microphone);
+        PermissionStatus storage = await PermissionHandler().checkPermissionStatus(PermissionGroup.storage);
+        if(microphone != PermissionStatus.granted || storage != PermissionStatus.granted) {
+          askForPermissions();
+        } else {
+          print('权限配置完成');
+        }
       },
       onTapUp: (d) {
         setState(() {

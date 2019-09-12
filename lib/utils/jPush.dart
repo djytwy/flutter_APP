@@ -61,8 +61,11 @@ class Jpush{
           // int taskId = int.parse(data['taskId']); //任务id
           int taskState = int.parse(data['taskState']); //工单状态
           // int msgStatus = int.parse(data['msgStatus']); //操作状态
+          if(msgType == 1 || msgType == 2){
+            bus.emit("refreshTask", false);
+            bus.emit('refreshMenu');
+          }
           if(msgType == 2){ //工单
-            bus.emit("refreshTask");
             if (taskState == 1) { // 新建
               bus.emit("refreshHome");
               return;

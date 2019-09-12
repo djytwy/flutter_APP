@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import './utils/util.dart';
+import './services/pageHttpInterface/shiftDuty.dart';
+import './utils/eventBus.dart';
 // 页面
 import './pages/home/home.dart';
 import './pages/home/scheduling.dart';
@@ -19,6 +21,8 @@ class Index extends StatefulWidget {
 class _IndexState extends State<Index> {
   int _tabIndex = 0;
   var tabImages;
+  int userId;
+  int unread_num = 0; // 未读数量
   List<Map> _bodys = [
     { 'name':'首页', 'content': Home()},
     { 'name':'我的任务', 'content': MyTask()}
@@ -37,8 +41,47 @@ class _IndexState extends State<Index> {
   void initState(){
     super.initState();
     setAuthMenu();
+    getLocalStorage('userId').then((val){
+      setState(() {
+        userId = int.parse(val);
+      });
+      initData();
+    });
+    //监听访问详情事件，来刷新通知消息
+    bus.on("refreshMenu", (arg) async {
+      getLocalStorage('userId').then((val){
+        setState(() {
+          userId = int.parse(val);
+        });
+        initData();
+      });
+    });
   }
-
+  @override
+  void dispose() {
+    super.dispose();
+    bus.off("refreshMenu");//移除广播监听
+  }
+  // 获取我的任务 全部的未读消息
+  void initData(){
+    if(userId == null){
+      showTotast('用户id不能为空！');
+      return;
+    }
+    var params = {
+        'userId': userId,
+        'submodelId': 2,
+        'msgIsread': 0,
+        'msgStatuss': [100, 101, 102, 103, 104, 200, 201, 202, 203, 204]
+    };
+    getAllWorksStatus(params).then((data){
+      setState(() {
+        unread_num = data.length;
+      });
+      print('----所有未读消息----:' + data.length.toString());
+      setAuthMenu();
+    });
+  }
   // 根据权限展示菜单
   void setAuthMenu() async {
     Map auth = await getAllAuths();
@@ -53,13 +96,13 @@ class _IndexState extends State<Index> {
     // 报修
     if (auth['repair']) {
       list = [
-          BottomNavigationBarItem( icon: Icon(Icons.work), title: Text('工单')),
-          BottomNavigationBarItem( icon: Icon(Icons.note_add), title: Text('发起工单')),
-          BottomNavigationBarItem( icon: Icon(Icons.track_changes), title: Text('我的任务')),
+          BottomNavigationBarItem( icon: Image.asset('assets/images/Shape1.png',width: setWidth(22),height: setHeight(22),), title: Text('工单')),
+          BottomNavigationBarItem( icon: Image.asset('assets/images/microphone.png',width: setWidth(22),height: setHeight(22),), title: Text('  ')),
+          BottomNavigationBarItem( icon: returnIcon(), title: Text('我的任务')),
       ];
       data = [
         { 'name':'工单', 'content': WorkOrder()},
-        { 'name':'发起工单', 'content': ''},
+        { 'name':'  ', 'content': ''},
         { 'name':'我的任务', 'content': MyTask()},
       ];
       if(auth['repair'] && !auth['keepInRepair'] && !auth['admin']) {
@@ -76,32 +119,32 @@ class _IndexState extends State<Index> {
       list.add(BottomNavigationBarItem( icon: Icon(Icons.home), title: Text('首页')));
       if (shiftDutyShow) {
         data.add({ 'name':'排班', 'content': Scheduing()});
-        list.add(BottomNavigationBarItem( icon: Icon(Icons.schedule), title: Text('排班')));
+        list.add(BottomNavigationBarItem( icon: Image.asset('assets/images/SC.png',width: setWidth(22),height: setHeight(22),), title: Text('排班')));
       }
       if (repair) {
-        data.add({ 'name':'发起工单', 'content': ''});
-        list.add(BottomNavigationBarItem( icon: Icon(Icons.note_add), title: Text('发起工单')));
+        data.add({ 'name':'  ', 'content': ''});
+        list.add(BottomNavigationBarItem( icon: Image.asset('assets/images/microphone.png',width: setWidth(22),height: setHeight(22),), title: Text('  ')));
       }
       data.add({ 'name':'工单', 'content': WorkOrder()});
       data.add({ 'name':'我的任务', 'content': MyTask()});
-      list.add(BottomNavigationBarItem( icon: Icon(Icons.work), title: Text('工单')));
-      list.add(BottomNavigationBarItem( icon: Icon(Icons.track_changes), title: Text('我的任务')));
+      list.add(BottomNavigationBarItem( icon: Image.asset('assets/images/Shape1.png',width: setWidth(22),height: setHeight(22),), title: Text('工单')));
+      list.add(BottomNavigationBarItem( icon: returnIcon(), title: Text('我的任务')));
     }
     // 管理员
     if (auth['admin']) {
       data = [
         { 'name':'首页', 'content': Home()},
         { 'name':'排班', 'content': Scheduing()},
-        { 'name':'发起工单', 'content': ''},
+        { 'name':'  ', 'content': ''},
         { 'name':'工单', 'content': WorkOrder()},
         { 'name':'我的任务', 'content': MyTask()},
       ];
       list = [
         BottomNavigationBarItem( icon: Icon(Icons.home), title: Text('首页')),
-        BottomNavigationBarItem( icon: Icon(Icons.schedule), title: Text('排班')),
-        BottomNavigationBarItem( icon: Icon(Icons.note_add), title: Text('发起工单')),
-        BottomNavigationBarItem( icon: Icon(Icons.work), title: Text('工单')),
-        BottomNavigationBarItem( icon: Icon(Icons.track_changes), title: Text('我的任务'))
+        BottomNavigationBarItem( icon: Image.asset('assets/images/SC.png',width: setWidth(22),height: setHeight(22),), title: Text('排班')),
+        BottomNavigationBarItem( icon: Image.asset('assets/images/microphone.png',width: setWidth(22),height: setHeight(22),), title: Text('  ')),
+        BottomNavigationBarItem( icon: Image.asset('assets/images/Shape1.png',width: setWidth(22),height: setHeight(22),), title: Text('工单')),
+        BottomNavigationBarItem( icon: returnIcon(), title: Text('我的任务'))
       ];
       if (!shiftDutyShow) {
         data.removeAt(1);
@@ -125,6 +168,32 @@ class _IndexState extends State<Index> {
         _tabIndex = 0;
       });
     } 
+  }
+  // 根据未读消息展示我的任务菜单
+  returnIcon(){
+    if(unread_num > 0){
+      return Container(
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    alignment: Alignment.topCenter,
+                    child: Container( 
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.all(Radius.circular(4))
+                      ),
+                    )
+                  ),
+                  // Icon(Icons.track_changes)
+                  Image.asset('assets/images/Shape.png',width: setWidth(22),height: setHeight(22),)
+                ],
+              ),
+            );
+    }else{
+      return Image.asset('assets/images/Shape.png',width: setWidth(22),height: setHeight(22),);
+    }
   }
   @override
   Widget build(BuildContext context) {
@@ -155,7 +224,7 @@ class _IndexState extends State<Index> {
                 if (_bodys[index]['name'] == '工单') {
                   // 选择工单按钮弹出对话框
                   ShowWorkOrder(CTX.currentState.overlay.context, backHome);
-                } else if (_bodys[index]['name'] == '发起工单') {
+                } else if (_bodys[index]['name'] == '  ') {
                   setState(() {
                     _tabIndex = 0;
                   });

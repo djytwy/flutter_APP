@@ -25,6 +25,7 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
   String copyPeople = '暂无';   // 抄送人
   String handlePost = '总经理';         // 处理岗位
   String handlePeople =  '华阳吴亦凡';    // 处理人
+  String handleDepartment = "";    // 
   String grade = '高优先级';  // 优先级
   String content = '暂无';  //  内容
   String complete = '5天';  // 完成时限
@@ -79,10 +80,11 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
       setState(() {
         picList = _picList.toList();   // 图片列表
         reportPeople = _reData["mainInfo"]["sendUserName"];   // 报修人
-        department = _reData["mainInfo"]["sendDepartment"];
+        department = _reData["mainInfo"]["sendDepartment"];   // 报修人部门
         copyPeople = _copyPeople;   // 抄送人
         handlePost = _reData["mainInfo"].containsKey("handleRoleName") ? _reData["mainInfo"]["handleRoleName"] : "暂无";         // 处理岗位
         handlePeople = _reData["mainInfo"]["handleUserName"];    // 处理人
+        handleDepartment = _reData["mainInfo"]["handleDepartment"] == null ? "" : _reData["mainInfo"]["handleDepartment"]; // 处理人部门
         grade = gradeMap[_reData["mainInfo"]["priority"].toString()];  // 优先级
         content = _reData["mainInfo"]["taskContent"];  //  内容
         complete = _reData["mainInfo"]["sendUserName"];  // 完成时限
@@ -279,7 +281,7 @@ class _DetailWordOrderState extends State<DetailWordOrder> {
                     ),
                     ListItem(title: '抄送人', content: copyPeople == null ? "暂无" : copyPeople,border: true),
                     ListItem(title: '处理岗位', content: handlePost == null ? "暂未处理" : handlePost,border: true,),
-                    ListItem(title: '处理人', content: handlePeople == null ? "暂未处理" : handlePeople, phone: false, phoneNum: handlePhone),
+                    ListItem(title: '处理人', content: handlePeople == null ? "暂未处理" : '$handlePeople ($handleDepartment)', phone: false, phoneNum: handlePhone),
                     Container(
                       margin: EdgeInsets.fromLTRB(
                         0.0,

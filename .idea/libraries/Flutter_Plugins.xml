@@ -1,0 +1,26 @@
+<component name="libraryTable">
+  <library name="Flutter Plugins" type="FlutterPluginsLibraryType">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_local_notifications-0.8.2" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/shared_preferences-0.5.3+4" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/xfvoice-1.0.1" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/path_provider-1.2.0" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/package_info-0.4.0+6" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/git/flutter_echart-3b527b2e6703b6aa01135ba366c3f959b00e9ea1" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_picker-1.0.13" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_webview_plugin-0.3.5" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/git/jpush-flutter-plugin-4d847f9b2150dc4fd1f8a7620d414d60f464fab7" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/catcher-0.2.3" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/image_picker-0.6.1+3" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/video_player-0.10.1+6" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/fluttertoast-3.1.0" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/webview_flutter-0.3.11+4" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/url_launcher-5.1.2" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/flutter_mailer-0.4.1+2" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/device_info-0.4.0+2" />
+      <root url="file://$PROJECT_DIR$/../../workplace/soft/flutter/.pub-cache/hosted/pub.flutter-io.cn/permission_handler-3.2.2" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

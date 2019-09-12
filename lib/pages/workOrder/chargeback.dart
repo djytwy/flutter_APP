@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
+import '../../utils/eventBus.dart';
 // 组件
 import '../../components/ButtonsComponents.dart';
 import '../../components/ListBarComponents.dart';
@@ -207,6 +208,7 @@ class _Chargeback extends State<Chargeback> {
     } 
     // 派单
     getdispatchSheet(params).then((data){
+      bus.emit("refreshTask");
       Navigator.pop(context, true); //操作成功返回
     });
   }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../utils/util.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../services/pageHttpInterface/shiftDuty.dart';
-
+import '../../utils/eventBus.dart';
 // 组件
 import '../../components/ListBarComponents.dart';
 import '../../components/SplitLine.dart';
@@ -98,6 +98,7 @@ class _AddShiftDutyState extends State<AddShiftDuty> {
     // 提交换班申请
     getShiftDuty(params).then((value){
       if (value != null && value is bool) {
+        bus.emit('refreshTask');
         Navigator.pop(context);
       }
     });

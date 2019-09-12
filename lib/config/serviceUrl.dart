@@ -1,4 +1,6 @@
-const serviceUrl= 'https://tesing.china-tillage.com';
+import 'package:flutter/foundation.dart';
+
+const serviceUrl= kReleaseMode ? 'https://tesing.china-tillage.com' : 'https://ghhmzjd.tillage-cloud.com:9443';
 const servicePath = {
   // 报修相关接口
   'ReportFixData': '/workorder/areaConfig/getTaskAllAreaByTreeName',

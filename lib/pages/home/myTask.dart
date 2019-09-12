@@ -15,10 +15,12 @@ import '../shiftDuty/addShiftDuty.dart';
 import '../shiftDuty/approvalPendingList.dart';
 import '../shiftDuty/approved.dart';
 import '../shiftDuty/inApproval.dart';
+import '../ModifyPassword.dart';
 
 // 新工单列表数量
 import '../../services/pageHttpInterface/workOrderList.dart';
-import '../ModifyPassword.dart';
+import '../../services/pageHttpInterface/shiftDuty.dart';
+
 
 
 
@@ -62,6 +64,9 @@ class _MyTask extends State<MyTask> {
   bool keepInRepair = false; //维修权限
   bool addShiftDuty = false; //换班申请权限
   bool shiftDutyManage = false; //排班管理权限
+
+  int workOrder_unread_num = 0; //工单未读数量
+  int shiftDuty_unread_num = 0; //排班未读数量
   @override
   void initState(){
     super.initState();
@@ -70,12 +75,16 @@ class _MyTask extends State<MyTask> {
     getLocalStorage('userId').then((data){
       userId = (data is int) ? data : int.parse(data);
       getInitData();
+      getAllUnread(1);
+      // getAllUnread(2);
     });
     //监听访问详情事件，来刷新通知消息
-    const second = Duration(seconds: 2);
-    bus.on("refreshTask", (arg) async {
-      await Future.delayed(second);
+    bus.on("refreshTask", ([arg]) async {
+      await Future.delayed(Duration(seconds: 1));
       getInitData();
+      if(arg == null){
+        bus.emit('refreshMenu');
+      }
    });
   }
   @override
@@ -111,7 +120,6 @@ class _MyTask extends State<MyTask> {
   }
   // 退出登录
   void signOut() async{
-    print('222');
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove('token');
     prefs.remove('menus');
@@ -135,7 +143,7 @@ class _MyTask extends State<MyTask> {
       'msgIsread': 0
       // 'msgStatus': 0  //子状态[100-新工单;101-我的工单;102-报修工单;103-退单]不传的时候取对应的所有
     };
-
+    getAllUnread(msgType);
     getMyTaskList(params).then((data) async {
       if(data is Map && params['msgType'] == 2) {
         dynamic _data = await getData("0","1", false, true);
@@ -146,6 +154,33 @@ class _MyTask extends State<MyTask> {
       } else if (data is Map && params['msgType'] == 1) {
         setState(() {
            pageSchedulingData = data;
+        });
+      }
+    });
+  }
+  // 获取工单和排班总的未读数量
+  void getAllUnread(type){
+    var params = {
+      'userId': userId,
+      'submodelId': 2,
+      'msgIsread': 0,
+      'msgType': type
+    };
+    if( type == 1 ){
+      params['msgStatuss'] = [200, 201, 202, 203, 204];
+    }else if(type == 2){
+       params['msgStatuss'] = [100, 101, 102, 103, 104];
+    }
+    getAllWorksStatus(params).then((data){
+      if(type == 1){//排班
+        print('----排班未读消息----:' + data.length.toString());
+        setState(() {
+          shiftDuty_unread_num = data.length;
+        });
+      }else if(type == 2){//工单
+      print('----工单未读消息----:' + data.length.toString());
+        setState(() {
+          workOrder_unread_num = data.length;
         });
       }
     });
@@ -344,11 +379,24 @@ class _MyTask extends State<MyTask> {
                               this.getInitData();
                             }
                           },
-                          child:  Text('工单处理', textAlign: TextAlign.center, style: 
-                            TextStyle( 
-                              color:  this._work == false ? Color.fromRGBO(74, 144, 226, 1) : Color.fromRGBO(229,229,229,1)
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                              Text('工单处理', textAlign: TextAlign.center, style: TextStyle(color:  this._work == false ? Color.fromRGBO(74, 144, 226, 1) : Color.fromRGBO(229,229,229,1))),
+                              Offstage(
+                                offstage: workOrder_unread_num > 0 ? false : true,
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: EdgeInsets.only(left: _adapt.setWidth(5)),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.all(Radius.circular(3))
+                                  ),
+                                ),
                               )
-                            ),
+                            ],
+                          ),
                         )
                       ),
                       Expanded(
@@ -366,11 +414,24 @@ class _MyTask extends State<MyTask> {
                                   }
                               },
                               child: Center(
-                                child: Text('换班处理', style: 
-                                  TextStyle(
-                                    color:  this._shift == false ? Color.fromRGBO(74, 144, 226, 1) : Color.fromRGBO(229,229,229,1)
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: <Widget>[
+                                    Text('换班处理', style: TextStyle( color:  this._shift == false ? Color.fromRGBO(74, 144, 226, 1) : Color.fromRGBO(229,229,229,1))),
+                                    Offstage(
+                                      offstage: shiftDuty_unread_num > 0 ? false : true,
+                                      child: Container(
+                                        width: 6,
+                                        height: 6,
+                                        margin: EdgeInsets.only(left: _adapt.setWidth(5)),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.all(Radius.circular(3))
+                                        ),
+                                      )
                                     )
-                                  ),
+                                  ],
+                                ),
                               ),
                             )
                         )

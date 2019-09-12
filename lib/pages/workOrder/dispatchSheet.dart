@@ -232,9 +232,9 @@ class _DispatchSheet extends State<DispatchSheet> {
     } 
     // 派单
     getdispatchSheet(params).then((data) async{
+      bus.emit("refreshTask");
       if (optionType == 0) {  //派给自己
         if (!widget.isJPush) { //如果是推送进来的详情页，就不需要返回上一页
-          bus.emit("refreshTask");
           Navigator.pop(context);
         }
         Navigator.pushReplacement(context, new MaterialPageRoute(builder: (BuildContext context){

@@ -10,6 +10,7 @@ import '../../utils/util.dart';
 
 import './copierDepartment.dart';
 import './view/copierList.dart';
+import '../../utils/eventBus.dart';
 
 class ReportFix extends StatefulWidget {
   ReportFix({
@@ -210,9 +211,11 @@ class _ReportFixState extends State<ReportFix> {
           'copyUser': copierIds
         };
         showAlertDialog(context, text: '是否确认提交工单？', onOk: (){
-          postData(data).then((val) {
+          postData(data).then((val) async{
             if (val != null) {
               _showToast();
+              print('---推送消息----');
+              bus.emit('refreshMenu');
               Navigator.pop(context);
             }
           });

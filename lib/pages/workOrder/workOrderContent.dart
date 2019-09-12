@@ -122,24 +122,28 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
   }
 
   void _submit(){
-    getLocalStorage('userId').then((val) {
-      var data= {
-        "id": widget.orderID,
-        "now_userId": int.parse(val), 
-        "optionType":2, // 2代表已完成
-        "pictureUrlList": uploadImgList,
-        "info": info,
-      };
-      submitData(data).then((val) {
-        if(repair){
-          // 刷新 换班信息
-          bus.emit("refreshTask");
-        }
-        showTotast('提交成功！');
-        Navigator.pop(context, true);
-        // Navigator.pushReplacementNamed(context, '/submitWorkOrder');
+    if(pageData["taskPhotograph"].toString() == "1" && uploadImgList.length == 0) {
+      showTotast('这个工单需要上传照片，请上传照片！');
+    } else {
+      getLocalStorage('userId').then((val) {
+        var data= {
+          "id": widget.orderID,
+          "now_userId": int.parse(val), 
+          "optionType":2, // 2代表已完成
+          "pictureUrlList": uploadImgList,
+          "info": info,
+        };
+        submitData(data).then((val) {
+          if(repair){
+            // 刷新 换班信息
+            bus.emit("refreshTask");
+          }
+          showTotast('提交成功！');
+          Navigator.pop(context, true);
+          // Navigator.pushReplacementNamed(context, '/submitWorkOrder');
+        });
       });
-    });
+    }
   }
 
   void getImage(file)  {

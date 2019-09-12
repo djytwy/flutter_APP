@@ -60,7 +60,7 @@ Future baseAjax({
         showTotast('登录失效，请重新登录！');
         signOut();
       }else {
-        String _errorString = '服务器错误:' + data['error'] + ' 状态码' + data['code'].toString();
+        String _errorString = data['error'];
         showTotast(_errorString);
       }
     } else {

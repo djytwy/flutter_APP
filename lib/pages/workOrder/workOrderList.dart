@@ -197,7 +197,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
                         content: listData[index]["taskContent"],
                         fontSize: fontSize,
                         place: listData[index].containsKey("areaName") ? listData[index]["areaName"]: '无',
-                        status: statusList[listData[index]["taskNowState"]],
+                        status: statusList[listData[index]["taskNowState"]] == '待验收' ? "" : statusList[listData[index]["taskNowState"]],
                         time: _converTime(listData[index]["addTime"]),
                         orderID: listData[index]["ID"],
                         redPoint: listData[index]["redPoint"],

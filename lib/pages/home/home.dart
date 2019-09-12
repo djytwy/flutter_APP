@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -10,13 +11,16 @@ import '../../utils/util.dart';
 import '../../pages/workOrder/inTimeWorkOrder.dart';
 import '../ModifyPassword.dart';
 import '../../utils/eventBus.dart';
+
+const String MIN_DATETIME = '2010-05-12';
+const String MAX_DATETIME = '2021-11-25';
+
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
 
   _HomeState createState() => _HomeState();
 }
-const String MIN_DATETIME = '2010-05-12';
-const String MAX_DATETIME = '2021-11-25';
+
 class _HomeState extends State<Home> {
   // 选择下拉菜单
   List<DropdownMenuItem> getListData(){
@@ -243,7 +247,7 @@ class _HomeState extends State<Home> {
   // 生成版本号
   void _genVersion() {
     DateTime now = DateTime.now();
-    dynamic version = (now.day + 8).toString();
+    dynamic version = (now.day + 10).toString();
     dynamic year = (now.year).toString();
     dynamic month = (now.month).toString();
     dynamic day = (now.day).toString();
@@ -273,6 +277,8 @@ class _HomeState extends State<Home> {
     var chart = new charts.BarChart(
       series,
       animate: true,
+      primaryMeasureAxis:
+        new charts.NumericAxisSpec(renderSpec: new charts.NoneRenderSpec()),
     );
     var chartWidget = new Padding(
       padding: new EdgeInsets.only(right: 16.0,left: 16.0),
@@ -301,6 +307,8 @@ class _HomeState extends State<Home> {
     var chart2 = new charts.BarChart(
       series2,
       animate: true,
+      primaryMeasureAxis:    // 显示基础图表，莫得线
+        new charts.NumericAxisSpec(renderSpec: new charts.NoneRenderSpec()),
     );
     var chartWidget2 = new Padding(
       padding: new EdgeInsets.only(right: 16.0,left: 16.0),
@@ -526,7 +534,7 @@ class _HomeState extends State<Home> {
              ),
             Container(
               margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(160)),
-              child: Text('版本号: $_version',style:TextStyle(color:Colors.white54)),
+              child: kReleaseMode ? Text('正式版本号: $_version',style:TextStyle(color:Colors.white54)) : Text('debug 版本号: $_version',style:TextStyle(color:Colors.white54)),
             )
           ],
           ),
@@ -896,6 +904,7 @@ class _HomeState extends State<Home> {
     );
   }
 }
+
 class ClicksPerYear {
   final String year;
   final int clicks;
