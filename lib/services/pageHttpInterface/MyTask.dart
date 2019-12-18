@@ -27,8 +27,10 @@ Future getRoleList() async {
 Future getdispatchSheet(params) async {
   var data = await baseAjax(url:'/workorder/task/conductTask', params: params, method: 'post');
   if (data != null) {
-    showTotast('操作成功！');
-    return data;
+    showTotast('派单操作成功！');
+    return true;
+  } else {
+    return false;
   }
 }
 // 用户列表

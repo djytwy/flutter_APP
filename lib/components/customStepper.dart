@@ -627,8 +627,8 @@ class _StepperState extends State<CustomStepper> with TickerProviderStateMixin {
       children.add(Column(
         key: _keys[i],
         children: <Widget>[
-          InkWell(
-            onTap: widget.steps[i].state != StepState.disabled
+          InkWell( 
+            onTap: widget.steps[i].state != StepState.disabled 
                 ? () {
                     // In the vertical case we need to scroll to the newly tapped
                     // step.
@@ -648,9 +648,14 @@ class _StepperState extends State<CustomStepper> with TickerProviderStateMixin {
       ));
     }
 
-    return ListView(
-      shrinkWrap: true,
-      physics: widget.physics,
+    // return ListView(
+    //   shrinkWrap: true,
+    //   physics: widget.physics,
+    //   children: children,
+    // );
+    
+    // 不使用ListView可以让steper组件不可滑动
+    return Column(
       children: children,
     );
   }

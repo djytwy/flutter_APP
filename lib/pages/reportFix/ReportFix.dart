@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:flutter/painting.dart';
+
 import '../../services/pageHttpInterface/ReportFix.dart';
 import 'package:flutter/material.dart';
 import '../../components/textField.dart';
@@ -11,6 +13,10 @@ import '../../utils/util.dart';
 import './copierDepartment.dart';
 import './view/copierList.dart';
 import '../../utils/eventBus.dart';
+// 图片上传组件
+import '../../components/customImgPicker.dart';
+// 图片预览组件
+import 'view/previewImg.dart';
 
 class ReportFix extends StatefulWidget {
   ReportFix({
@@ -38,7 +44,7 @@ class _ReportFixState extends State<ReportFix> {
   String content;           // 文本框的内容
   String place;             // 地点
   String grade = '中';      // 优先级
-  String camera;            // 是否拍照
+  String camera = '否';            // 是否拍照
   dynamic userId;            // 用户ID
 
   bool _contentFlag = false;  // 文本输入框的控制标志
@@ -55,6 +61,9 @@ class _ReportFixState extends State<ReportFix> {
   List copierUsers = []; //抄送人列表-- 不包含部门
   List copierIds = []; //抄送人id
   List copierSelects = []; //抄送人的列表-用于显示名字
+  List pictureList = [];  // 现场图片的list
+  List postPicture = [];  // 用于上传图片的URL列表
+
   @override
   void initState() {
     // 获取抄送人列表
@@ -75,20 +84,20 @@ class _ReportFixState extends State<ReportFix> {
     });
     // 获取默认抄送人
     getDefaulttCopierList().then((data){
-        if(data != null && data is List) {
-            var list = [];
-            data.forEach((item){
-              list.add({
-                'isNoDel': true,
-                'userName': item['userName'],
-                'userID': item['userId']
-              });
-            });
-            setState(() {
-              defaulttCopierList = list;
-              copierSelects = list;
-            });
-        }
+      if(data != null && data is List) {
+        var list = [];
+        data.forEach((item){
+          list.add({
+            'isNoDel': true,
+            'userName': item['userName'],
+            'userID': item['userId']
+          });
+        });
+        setState(() {
+          defaulttCopierList = list;
+          copierSelects = list;
+        });
+      }
     });
     getData().then((val) {
       setState(() {
@@ -119,14 +128,10 @@ class _ReportFixState extends State<ReportFix> {
     List copierLists = [];
     // 清空选中的id, 和 列表数据中 selectList
     copierSelects.forEach((itemx){
-      if (item['userID'] != itemx['userID']) {
-          list.add(itemx);
-      }
+      if (item['userID'] != itemx['userID']) list.add(itemx);
     });
     copierIds.forEach((itemx){
-        if (item['userID'] != itemx) {
-            ids.add(itemx);
-        }
+      if (item['userID'] != itemx) ids.add(itemx);
     });
     // 抄送列表，包含id
     copierList.forEach((itemx){
@@ -208,10 +213,11 @@ class _ReportFixState extends State<ReportFix> {
           'taskPriority':gradeList[grade],
           'taskPhotograph':photo[camera],
           'taskContent':content,
-          'copyUser': copierIds
+          'copyUser': copierIds,
+          'picture': postPicture
         };
         showAlertDialog(context, text: '是否确认提交工单？', onOk: (){
-          postData(data).then((val) async{
+          postData(data).then((val) async {
             if (val != null) {
               _showToast();
               print('---推送消息----');
@@ -393,7 +399,7 @@ class _ReportFixState extends State<ReportFix> {
                         child: CustPicker(
                           itemsString: pickerDataGrade, 
                           scaffoldKey: _scaffoldKey, 
-                          textWidth: 475,
+                          textWidth: 477,
                           iconWidth: 60,
                           pickerCallback: (data,value) => pickerGrade(data,value),
                           flag: _gradeFlag,
@@ -419,7 +425,7 @@ class _ReportFixState extends State<ReportFix> {
                           child: Text('抄送人',textAlign: TextAlign.left,style: TextStyle(fontSize: fontSize,color: Colors.white70),)
                         ),
                       ),
-                      CopierList(data: copierSelects, delCopier: delCopier, pageCback: () async{
+                      CopierList(data: copierSelects, delCopier: delCopier, pageCback: () async {
                           var val = await Navigator.push(context, MaterialPageRoute(
                                     builder: (context) => CopierDepartment(data: copierList)
                                 ));
@@ -452,24 +458,82 @@ class _ReportFixState extends State<ReportFix> {
                   child: Row(
                     children: <Widget>[
                       Container(
-                        child: Text('是否拍照',textAlign: TextAlign.left,style: TextStyle(fontSize: fontSize,color: Colors.white70))
+                        child: Text('处理后拍照上传',textAlign: TextAlign.left,style: TextStyle(fontSize: fontSize,color: Colors.white70))
                       ),
                       Expanded(
                         child: CustPicker(
                           itemsString: pickerDataCamera, 
                           scaffoldKey: _scaffoldKey, 
-                          textWidth: 505,
+                          textWidth: 417,
                           iconWidth: 60,
                           pickerCallback: (data,value) => pickerCamera(data,value),
                           flag: _cameraFlag,
                           setData: _camera,
+                          defaultGrade: '否',
                         ),
                       )
                     ],
                   ),
                 ),
                 Container(
-                  margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(450)),
+                  padding: EdgeInsets.only(
+                    left: ScreenUtil.getInstance().setHeight(25),
+                    top: ScreenUtil.getInstance().setHeight(10)
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: Text('上传现场图片:',style: TextStyle(color: Colors.white70)),
+                ),
+                Container(
+                  padding: EdgeInsets.all(20.0),
+                  child: Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: Container(
+                          height: ScreenUtil.getInstance().setHeight(110),
+                          child: ListView.builder(
+                            scrollDirection:Axis.horizontal,
+                            itemCount: pictureList.length,
+                            itemBuilder: (context, index) {
+                              return Preview(
+                                imgFile: pictureList[index],
+                                index: index,
+                                previewCallBack: (index) => _delImage(index),
+                              );
+                            },
+                          ),
+                        )
+                      ),
+                      GestureDetector(
+                        child: Container(
+                          color: Color(0x60000000),
+                          child: Center(child: Icon(Icons.add,color: Colors.white)),
+                          height: ScreenUtil.getInstance().setWidth(85),
+                          width: ScreenUtil.getInstance().setWidth(85),
+                        ),
+                        onTap: (){
+                          if(pictureList.length >= 2)
+                            showTotast('现场图片最多上传两张 o(╥﹏╥)o');
+                          else
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Container(
+                                  // 设置高度215，避免报高度警告
+                                  height: 200,
+                                  child: CustomImgPicker(
+                                    context: context,
+                                    imageCallback: _getImg,
+                                  )
+                                );
+                              }
+                            );
+                        },
+                      )
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(100)),
                   child: FlatButton(
                     child: Text('报修',style: TextStyle(color: Colors.white)),
                     onPressed: submitData,
@@ -492,5 +556,24 @@ class _ReportFixState extends State<ReportFix> {
         )
       ),
     );
+  }
+
+  // 上传图片的回调
+  void _getImg(imageFile,data) {
+    if (pictureList.length >= 2)
+      showTotast("现场图片最多上传两张 o(╥﹏╥)o");
+    else
+      setState(() {
+        pictureList.add(imageFile);
+        postPicture.add(data["filePath"]);
+      });
+  }
+  
+  // 删除图片
+  void _delImage(index) {
+    setState(() {
+      postPicture.removeAt(index);
+      pictureList.removeAt(index);
+    });
   }
 }

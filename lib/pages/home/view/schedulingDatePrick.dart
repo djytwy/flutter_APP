@@ -16,7 +16,7 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
   void initState(){
     super.initState();
     setState(() {
-      value = getCurrentDay();
+      value = getCurrentTime(timeParams: 3);
     });
   }
   // 打开日期弹出框
@@ -28,15 +28,10 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
         confirm: Text('确认', style: TextStyle(color: Colors.red)),
         cancel: Text('取消', style: TextStyle(color: Colors.cyan)),
       ),
-      // minDateTime: DateTime.parse('2015-1-1'),
-      // maxDateTime: DateTime.parse(MAX_DATETIME),
+
       initialDateTime: _dateTime,
       dateFormat: _format,
       locale: DateTimePickerLocale.zh_cn,
-      // onClose: () => print("----- onClose -----"),
-      // onCancel: () => print('onCancel'),
-      // onChange: (dateTime, List<int> index) {
-      // },
       onConfirm: (dateTime, List<int> index) {
         DateTime item = DateTime.parse(dateTime.toString());
         String str = '';
@@ -55,7 +50,7 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
           value = str;
         });
         if (widget.change != null) {
-            widget.change(str);
+          widget.change(str);
         }
       },
     );
@@ -79,7 +74,7 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
     String dateString;
     if (_format == 'yyyy') { //年
       int year = int.parse(value);
-      if (type == '-'){ 
+      if (type == '-'){
         year -= 1;
       }else if (type == '+') {
         year += 1;
@@ -89,7 +84,7 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
       var item = value.split('-');
       int year = int.parse(item[0]);
       int month = int.parse(item[1]);
-      if (type == '-'){ 
+      if (type == '-'){
         month -= 1;
         if (month < 1) {
           year -= 1;
@@ -129,49 +124,33 @@ class _SchedulingDatePrickState extends State<SchedulingDatePrick> {
   Widget build(BuildContext context) {
     var _adapt = SelfAdapt.init(context);
     return Container(
-            margin: EdgeInsets.only(top: _adapt.setHeight(10)),
-            padding: EdgeInsets.fromLTRB(_adapt.setWidth(30), 0, _adapt.setWidth(30), 0),
-            height: _adapt.setHeight(42),
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color.fromRGBO(91, 156, 192, 0.3), Color.fromRGBO(0, 117, 141, 0.3)],
-              ),
-            ),
-            child: Row(
-              children: <Widget>[
-                IconButton(
-                  onPressed: this.prev,
-                  icon: Icon(Icons.arrow_left, color: Color.fromRGBO(67, 154, 255, 1), size: _adapt.setFontSize(35))
-                ),
-                Expanded(
-                  child: Container(
-                    alignment: Alignment.center,
-                    child: PopupMenuButton(
-                        child: Text( value != null ? value : '', style: TextStyle(color: Color.fromRGBO(67, 154, 255, 1), fontSize: _adapt.setFontSize(24))),
-                        onSelected: (String value){
-                          setState(() {
-                            _format = value;
-                          });
-                          _showDatePicker(context);
-                        },
-                        itemBuilder: (BuildContext context) {
-                          return <PopupMenuItem<String>>[
-                            PopupMenuItem<String>(child: Text("按年筛选"), value: "yyyy",),
-                            PopupMenuItem<String>(child: Text("按月筛选"), value: "yyyy-MMMM",),
-                            PopupMenuItem<String>(child: Text("按天筛选"), value: "yyyy-MMMM-dd",),
-                          ];
-                        },
-                        offset: Offset.zero
-                      )
-                    )
-                ),
-                IconButton(
-                  onPressed: this.next,
-                  icon: Icon(Icons.arrow_right, color:Color.fromRGBO(67, 154, 255, 1), size: _adapt.setFontSize(35))
-                ),
-              ],
-            ),
-          );
+      margin: EdgeInsets.only(top: _adapt.setHeight(10)),
+      padding: EdgeInsets.fromLTRB(_adapt.setWidth(30), 0, _adapt.setWidth(30), 0),
+      height: _adapt.setHeight(42),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color.fromRGBO(91, 156, 192, 0.3), Color.fromRGBO(0, 117, 141, 0.3)],
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          IconButton(
+            onPressed: this.prev,
+            icon: Icon(Icons.arrow_left, color: Color.fromRGBO(67, 154, 255, 1), size: _adapt.setFontSize(35))
+          ),
+          Expanded(
+            child: Container(
+              alignment: Alignment.center,
+              child: Text( value != null ? value : '', style: TextStyle(color: Color.fromRGBO(67, 154, 255, 1), fontSize: _adapt.setFontSize(24))),
+            )
+          ),
+          IconButton(
+            onPressed: this.next,
+            icon: Icon(Icons.arrow_right, color:Color.fromRGBO(67, 154, 255, 1), size: _adapt.setFontSize(35))
+          ),
+        ],
+      ),
+    );
   }
 }

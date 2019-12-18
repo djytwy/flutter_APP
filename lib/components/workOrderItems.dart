@@ -13,7 +13,7 @@ import '../utils/eventBus.dart';
   列表页跳转详情对应关系：
   '0' (新工单) : DispatchSheet(orderID:widget.orderID) 
   '1' (我的工单):(context) => WorkOrderContent(orderID:widget.orderID) 
-  '2' (我的报修): (context) => WorkOrderAccept(orderID:widget.orderID) 
+  '2' (验收处理): (context) => WorkOrderAccept(orderID:widget.orderID)
   '3' (退单处理): (context) => Chargeback(orderID: widget.orderID)
   '4' (挂起): (context) => DispatchSheet(orderID:widget.orderID) 
 */
@@ -56,6 +56,7 @@ class WorkOrderItem extends StatefulWidget {
 class _WorkOrderItemState extends State<WorkOrderItem> {
 
   bool _redPoint = true;
+  double _fontSize;
   @override
   void initState() {
     _redPoint = widget.redPoint;
@@ -65,7 +66,9 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
 
   @override
   Widget build(BuildContext context) {
+    _fontSize = widget.fontSize == null ? _fontSize : widget.fontSize;
     ScreenUtil.instance = ScreenUtil(width: 750, height: 1334, allowFontScaling: true)..init(context);
+    _fontSize = ScreenUtil.getInstance().setSp(30);
     return Container(
       margin: EdgeInsets.fromLTRB(
         ScreenUtil.getInstance().setHeight(16),
@@ -94,7 +97,7 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                 children: <Widget>[
                   Container(
                     margin: EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(10)),
-                    height: ScreenUtil.getInstance().setWidth(70),
+                    height: ScreenUtil.getInstance().setHeight(70),
                     width: ScreenUtil.getInstance().setWidth(70),
                     alignment: Alignment.topLeft,
                     decoration: BoxDecoration(
@@ -108,7 +111,6 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                     child: Container(
                       alignment: Alignment.centerRight,
                       child: Offstage(
-                        // offstage: !widget.redPoint,
                         offstage: !_redPoint,
                         child: Container(
                           width: 10,
@@ -131,10 +133,10 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                   Container(
                     padding: EdgeInsets.only(bottom: ScreenUtil.getInstance().setHeight(15)), 
                     alignment: Alignment.centerLeft,
-                    child: Text(widget.time, textAlign: TextAlign.left ,style: TextStyle(color: Colors.white70, fontSize: widget.fontSize)),
+                    child: Text(widget.time, textAlign: TextAlign.left ,style: TextStyle(color: Colors.white70, fontSize: _fontSize)),
                   ),
                   Expanded(
-                    child: Text(widget.workOrderType.toString() != '0' ? widget.status: "", textAlign: TextAlign.right,style: TextStyle(color: Colors.greenAccent,fontSize: widget.fontSize))  
+                    child: Text(widget.workOrderType.toString() != '0' ? widget.status: "", textAlign: TextAlign.right,style: TextStyle(color: Colors.greenAccent,fontSize: _fontSize))  
                   )
                 ] 
               )
@@ -143,13 +145,13 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
               padding: EdgeInsets.only(left: ScreenUtil.getInstance().setHeight(20)),
               margin: EdgeInsets.only(right: ScreenUtil.getInstance().setWidth(14)),
               child: Center(
-                child: Text(widget.content, style: TextStyle(color: Colors.white70,fontSize: widget.fontSize)),
+                child: Text(widget.content, style: TextStyle(color: Colors.white70,fontSize: _fontSize)),
               )
             ),
             Container(
               padding: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(24), left: ScreenUtil.getInstance().setHeight(20)),
               alignment: Alignment.centerLeft,
-              child: Text(widget.place, style: TextStyle(color: Colors.white,fontSize: widget.fontSize)),
+              child: Text(widget.place, style: TextStyle(color: Colors.white,fontSize: _fontSize)),
             ),
           ],
         ),
@@ -170,7 +172,7 @@ class _WorkOrderItemState extends State<WorkOrderItem> {
                 widget.workOrderType.toString() == '3' ? (context) => Chargeback(orderID: widget.orderID):
                 widget.workOrderType.toString() == '4' ? (context) => DispatchSheet(orderID:widget.orderID) : 
                 // 是否显示时限
-                (context) => DetailWordOrder(orderID:widget.orderID, showExtime: widget.showExtime,)
+                (context) => DetailWordOrder(orderID:widget.orderID, showExtime: widget.showExtime)
             ));
             if(_status != null) {
               _statusCallBack();

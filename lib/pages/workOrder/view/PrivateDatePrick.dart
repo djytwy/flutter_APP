@@ -5,9 +5,10 @@ import '../../../utils/util.dart';
 
 class PrivateDatePrick extends StatefulWidget {
   PrivateDatePrick({
-    Key key, this.change
+    Key key, this.change, this.defaultDateString
     }) : super(key: key);
   Function change;
+  String defaultDateString;
   _PrivateDatePrick createState() => _PrivateDatePrick();
 }
 
@@ -18,7 +19,7 @@ class _PrivateDatePrick extends State<PrivateDatePrick> {
   @override initState(){
     super.initState();
     setState(() {
-      value = getCurrentDay();
+      value = widget.defaultDateString != null ? widget.defaultDateString : getCurrentTime(timeParams: 2);
     });
   }
   // 打开日期弹出框

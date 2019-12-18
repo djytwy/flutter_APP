@@ -1,6 +1,7 @@
 // 我的任务页面
 import 'dart:async';
 
+import 'package:app_tims_hotel/utils/loading.dart';
 import 'package:flutter/material.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
@@ -15,13 +16,12 @@ import '../shiftDuty/addShiftDuty.dart';
 import '../shiftDuty/approvalPendingList.dart';
 import '../shiftDuty/approved.dart';
 import '../shiftDuty/inApproval.dart';
-import '../ModifyPassword.dart';
+import 'view/drawerPage.dart';
 
 // 新工单列表数量
 import '../../services/pageHttpInterface/workOrderList.dart';
 import '../../services/pageHttpInterface/shiftDuty.dart';
-
-
+import '../../services/pageHttpInterface/Login.dart';
 
 
 class MyTask extends StatefulWidget {
@@ -67,26 +67,27 @@ class _MyTask extends State<MyTask> {
 
   int workOrder_unread_num = 0; //工单未读数量
   int shiftDuty_unread_num = 0; //排班未读数量
+
+  String _projectName = "";   // 项目名称
+
   @override
   void initState(){
     super.initState();
+    Loading.show('mytask');
     initAuth();
     _initUserInfo();
     getLocalStorage('userId').then((data){
       userId = (data is int) ? data : int.parse(data);
       getInitData();
-      getAllUnread(1);
-      // getAllUnread(2);
     });
     //监听访问详情事件，来刷新通知消息
     bus.on("refreshTask", ([arg]) async {
-      await Future.delayed(Duration(seconds: 1));
+      await Future.delayed(Duration(microseconds: 200));
       getInitData();
-      if(arg == null){
-        bus.emit('refreshMenu');
-      }
+      if(arg == null) bus.emit('refreshMenu');
    });
   }
+
   @override
   void dispose() {
     super.dispose();
@@ -115,6 +116,7 @@ class _MyTask extends State<MyTask> {
         _postName = (prefs.getString('postName') ?? '');
         _departmentName = (prefs.getString('departmentName') ?? '');
         _phoneNum = (prefs.getString('phoneNum') ?? '');
+        _projectName = (prefs.getString('projectName') ?? '');
       });
     } 
   }
@@ -128,14 +130,17 @@ class _MyTask extends State<MyTask> {
     prefs.remove('userId');
     prefs.remove('departmentName');
     prefs.remove('phoneNum');
+    // 调用一次登出的接口
+    await loginOut();
     Navigator.pop(context);
     Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (context) => new Test(
-      )
+      builder: (context) => new Login()
     ));
   }
   // 获取初始化数据
   void getInitData(){
+    getAllUnread(1);
+    getAllUnread(2);
     Map<String, dynamic> params = {
       'userId': userId,
       'submodelId': 2,
@@ -143,7 +148,6 @@ class _MyTask extends State<MyTask> {
       'msgIsread': 0
       // 'msgStatus': 0  //子状态[100-新工单;101-我的工单;102-报修工单;103-退单]不传的时候取对应的所有
     };
-    getAllUnread(msgType);
     getMyTaskList(params).then((data) async {
       if(data is Map && params['msgType'] == 2) {
         dynamic _data = await getData("0","1", false, true);
@@ -156,6 +160,7 @@ class _MyTask extends State<MyTask> {
            pageSchedulingData = data;
         });
       }
+      await Loading.cancel('mytask');
     });
   }
   // 获取工单和排班总的未读数量
@@ -169,7 +174,7 @@ class _MyTask extends State<MyTask> {
     if( type == 1 ){
       params['msgStatuss'] = [200, 201, 202, 203, 204];
     }else if(type == 2){
-       params['msgStatuss'] = [100, 101, 102, 103, 104];
+      params['msgStatuss'] = [100, 101, 102, 103, 104];
     }
     getAllWorksStatus(params).then((data){
       if(type == 1){//排班
@@ -178,7 +183,7 @@ class _MyTask extends State<MyTask> {
           shiftDuty_unread_num = data.length;
         });
       }else if(type == 2){//工单
-      print('----工单未读消息----:' + data.length.toString());
+        print('----工单未读消息----:' + data.length.toString());
         setState(() {
           workOrder_unread_num = data.length;
         });
@@ -189,42 +194,6 @@ class _MyTask extends State<MyTask> {
   Widget build(BuildContext context) {
     // 设置 设计图和设备的 宽高比例
     var _adapt = SelfAdapt.init(context);
-    Widget header = DrawerHeader(
-      padding: EdgeInsets.zero, /* padding置为0 */
-      child: new Stack(children: <Widget>[ /* 用stack来放背景图片 */
-        // new Image.asset(
-        //   'assets/images/background.png', fit: BoxFit.fill, width: double.infinity,),
-        new Align(/* 先放置对齐 */
-          alignment: FractionalOffset.center,
-          child: Container(
-            // height: 100.0,
-            width: 100.0,
-            margin: EdgeInsets.only(left: 12.0, bottom: 12.0),
-            child: new Column(
-              mainAxisSize: MainAxisSize.min, /* 宽度只用包住子组件即可 */
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                new Container(
-                  child: Center(
-                    child: new CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/LOGO.png'),
-                    radius: 35.0,),
-                    ),
-                ),
-                new Container(
-                  margin: EdgeInsets.only(top: 15.0),
-                  child: Center(
-                    child: new Text(this._userName, style: new TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white),),
-                  )
-                ),
-              ],),
-          ),
-        ),
-      ]),);
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -233,129 +202,7 @@ class _MyTask extends State<MyTask> {
         backgroundColor: Colors.transparent
       ),
       drawer: new Drawer(
-        child: new Container(
-          decoration: new BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/images/background.png"),
-              fit: BoxFit.cover
-            )
-          ),
-          child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            header,  // 上面是自定义的header
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10),top: _adapt.setHeight(20),bottom: _adapt.setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: _adapt.setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text('部门',style: TextStyle(color: Color(0xFF999999),fontSize: _adapt.setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text(this._departmentName,style: TextStyle(color: Color(0xFFffffff),fontSize: _adapt.setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10),bottom: _adapt.setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: _adapt.setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text('电话',style: TextStyle(color: Color(0xFF999999),fontSize: _adapt.setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text(this._phoneNum,style: TextStyle(color: Color(0xFFffffff),fontSize: _adapt.setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10),bottom: _adapt.setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: _adapt.setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text('职位',style: TextStyle(color: Color(0xFF999999),fontSize: _adapt.setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                      child: new Text(this._postName,style: TextStyle(color: Color(0xFFffffff),fontSize: _adapt.setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => new ModifyPassword()
-                  ));
-                },
-                child: Container(
-                  margin: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10),bottom: _adapt.setHeight(10)),
-                  color: Color.fromRGBO(4, 38, 83, 0.35),
-                  height: _adapt.setHeight(45),
-                  child: Row(
-                    children: <Widget>[
-                      new Padding(
-                        padding: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10)),
-                        child: new Text('修改密码',style: TextStyle(color: Color(0xFF999999),fontSize: _adapt.setFontSize(16))),
-                      ),
-                      new Padding(
-                        padding: EdgeInsets.only(left: _adapt.setHeight(100)),
-                        child: Icon(Icons.keyboard_arrow_right,color: Color(0xFF999999),),
-                      )
-                    ],
-                  )
-                ),
-              )
-            ),
-            ListTile(
-              title: GestureDetector(
-                 onTap: signOut,
-                 child: Container(
-                    margin: EdgeInsets.only(left: _adapt.setHeight(10),right: _adapt.setHeight(10),top: _adapt.setHeight(90)),
-                    color: Color.fromRGBO(4, 38, 83, 0.35),
-                    height: _adapt.setHeight(45),
-                    child: new Center(
-                      child: new Text('退出登录',style: TextStyle(color: Color(0xFFffffff),fontSize: _adapt.setFontSize(16))),
-                    )
-                  ),
-              )
-            ),
-          ],
-          ),
-        ),
+        child: drawerPage(_projectName, _userName, _adapt, _postName, _phoneNum, _departmentName, context),
       ),
       body: SingleChildScrollView(
             child: Column(
@@ -479,7 +326,6 @@ class _MyTask extends State<MyTask> {
                                                     Text('新工单', style: TextStyle(color: Color.fromRGBO(171,171,171,1)),)
                                                   ],
                                                 )
-                                                // ,
                                               ),
                                             )
                                           ),
@@ -494,7 +340,7 @@ class _MyTask extends State<MyTask> {
                                         ),
                                         Expanded(
                                           child: Center(
-                                              child: Text(pageWorkOrderData['newWorkOrderNum'].toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: _adapt.setFontSize(60)),),
+                                              child: Text(pageWorkOrderData['newWorkOrderNum'].toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: _adapt.setFontSize(60))),
                                             )
                                         )
                                       ],
@@ -511,7 +357,7 @@ class _MyTask extends State<MyTask> {
                               ),
                               Offstage(
                                 offstage: !repair,
-                                child: ButtonBars(title:'我的报修', number:  pageWorkOrderData['repairNum'], callCback: (){
+                                child: ButtonBars(title:'验收处理', number:  pageWorkOrderData['repairNum'], callCback: (){
                                           Navigator.push(context, MaterialPageRoute(
                                             builder: (context) => WorkOrderList(userID: userId,workOrderType: "2",)
                                           ));

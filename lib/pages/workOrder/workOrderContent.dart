@@ -1,3 +1,4 @@
+// 我的工单
 import 'dart:io';
 import 'package:app_tims_hotel/services/pageHttpInterface/workOrderContent.dart';
 import 'package:flutter/material.dart';
@@ -5,11 +6,13 @@ import '../../components/listItem.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../components/textField.dart';
 import '../../components/ButtonsComponents.dart';    // 下方两个按钮组件
-import '../../components/uploadImg.dart';  // 图片上传的组件
+import '../../components/buttonGroup.dart';  // 下方弹出按钮组件
 import '../../utils/util.dart';
 import '../../utils/eventBus.dart';
-import './chargReason.dart';// 退单原因
-
+import './backReason.dart';// 退单原因
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../config/serviceUrl.dart';
+import 'view/copierItem.dart';
 
 // 预览图片的组件
 class Preview extends StatelessWidget {
@@ -70,9 +73,7 @@ class WorkOrderContent extends StatefulWidget {
 }
 
 class _WorkOrderContentState extends State<WorkOrderContent> {
-
   bool flag = true;   // 是否隐藏完成时限
-
   // 初始化页面数据
   dynamic pageData = {
     "areaName": "",
@@ -82,8 +83,10 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
     "taskContent": "",
     "taskType": 1,
     "anticipatedTime": 1,
+    "rebuild": ""
   };
 
+  List picList = [];  // 处理后图片
   List imageList = []; // 图片列表
   List uploadImgList = []; // 上传后收到的url
   int imageNum=0;  // 图片数量
@@ -93,6 +96,19 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
   String info;  // 备注   
   bool admin = false; //管理员权限
   bool repair = false; // 报修权限
+  List copierList = []; // 抄送人的id
+  Map _dicColors = {
+    '空脏':Color.fromARGB(255, 239, 111, 111),
+    '住脏':Color.fromARGB(255, 239, 111, 111),
+    '空净':Color.fromARGB(255, 111, 185, 239),
+    '住净':Color.fromARGB(255, 111, 185, 239),
+    '锁门': Color.fromARGB(255, 239, 152, 111),
+    '维修': Color.fromARGB(255, 239, 152, 111),
+  };
+
+  // 处理前照片
+  dynamic picListBefore = [];
+
   void _getText(content) {
     setState(() {
       info = content;
@@ -106,22 +122,22 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
       repair = auth['repair'];
     });
   }
-  void _returnOrder() async{
+
+  void _returnOrder() async {
     var val = await Navigator.push(context, MaterialPageRoute(
-                      builder: (context) => ChargReason(orderID:  widget.orderID)
-                    ));
+      builder: (context) => ChargReason(orderID:widget.orderID,copyUser: copierList)
+    ));
     if(val != null){
       if(admin){
         // 刷新 换班信息
         bus.emit("refreshTask");
       }
-      // 路由跳两次
+      // 接上面路由继续跳一次
       Navigator.pop(context, true);
-      // Navigator.popAndPushNamed(context, '/returnBack');
     }
   }
 
-  void _submit(){
+  void _submit() {
     if(pageData["taskPhotograph"].toString() == "1" && uploadImgList.length == 0) {
       showTotast('这个工单需要上传照片，请上传照片！');
     } else {
@@ -129,9 +145,10 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
         var data= {
           "id": widget.orderID,
           "now_userId": int.parse(val), 
-          "optionType":2, // 2代表已完成
+          "optionType":2,       // 2代表已完成
           "pictureUrlList": uploadImgList,
           "info": info,
+          "copyUser": copierList
         };
         submitData(data).then((val) {
           if(repair){
@@ -159,46 +176,70 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
 
   void delImage(index) {
     setState(() {
+      uploadImgList.removeAt(index);
       imageList.removeAt(index);
     });
   }
 
   @override
   void initState() {
+    // TODO: implement initState
+    super.initState();
+    
     initAuth();
     getLocalStorage('userId').then((val){
       String userID = val;
       dynamic taskID = widget.orderID;
 
       getData(taskID=taskID,userID=userID).then((val) {
+        dynamic _TpicList = [];
+        dynamic _TpicListBefore = [];
+        if(val["mainInfo"]["taskPictureInfo"]["afterProcessing"] is List ) {
+          _TpicList = val["mainInfo"]["taskPictureInfo"]["afterProcessing"].
+          map((each) => serviceUrl+each['picUrl'].toString());
+        }
+
+        if(val["mainInfo"]["taskPictureInfo"]["beforeProcessing"] is List ) {
+          _TpicListBefore = val["mainInfo"]["taskPictureInfo"]["beforeProcessing"].
+          map((each) => serviceUrl+each['picUrl'].toString());
+        }
 
         if(val!=null || val.containsKey("areaName"))
           setState(() {
+            picList = _TpicList.toList();
+            picListBefore = _TpicListBefore.toList();
             pageData = val["mainInfo"];
             flag = val["mainInfo"]["taskType"] != 0 ? true : false;
           });
       });
     });
-
-    // TODO: implement initState
-    super.initState();
   }
 
   // 时间转换函数
-  String _converTime(time){
+  String _converTime(time) {
     // 后台出错前端不红屏
     if (time == null || time == '') time ='2019-08-22 06:45:42';
     DateTime _time = DateTime.parse(time);
     final nowDay = DateTime.now();
     final yesterday = nowDay.subtract(Duration(days: 1));
     int hour = _time.hour;
-    int seconds = _time.second;
+    int minute = _time.minute;
+    String _hour = addZero(hour);
+    String _minute = addZero(minute);
     if (_time.day == nowDay.day && _time.month == nowDay.month && _time.year == nowDay.year) {
-      return '$hour:$seconds';
+      return '$_hour:$_minute';
     } else if (_time.day == yesterday.day && _time.month == yesterday.month && _time.year == yesterday.year) {
-      return '昨天 $hour:$seconds';
-    } else 
+      return '昨天 $_hour:$_minute';
+    } else
       return time;
+  }
+
+  // 回调函数获得选中的抄送人ID
+  void _getCopierID(List _copierList) {
+    dynamic tempList = _copierList.map((e) => e["userID"]);
+    setState(() {
+      copierList = tempList.toList();
+    });
   }
 
   @override
@@ -227,8 +268,26 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
           ),
           actions: <Widget>[
             Container(
-              width: ScreenUtil.getInstance().setWidth(120),
-              child: Text('')
+              width: ScreenUtil.getInstance().setWidth(150),
+              child: FlatButton(
+                onPressed: (){
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return Container(
+                        height: 200,
+                        child: ButtonGroup(
+                          titleList: ["转给他人验收"],
+                        ),
+                      );
+                    }
+                  );
+                },
+                child: Offstage(
+                  offstage: true,
+                  child: Text('更多',style: TextStyle(color: Colors.blue)),
+                )
+              )
             ),
           ],
         ),
@@ -240,7 +299,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                 margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(16)),
                 child: Column(
                   children: <Widget>[
-                    ListItem(title: '地点', content: pageData["areaName"], border: true),
+                    ListItem(title: '地点', content: pageData["areaName"], border: true, labelWidget: StatusButton(color: _dicColors[pageData['roomState']], label: pageData['roomState'])),
                     ListItem(title: '时间', content: _converTime(pageData["addTime"]),border: true),
                     Offstage(
                       offstage: !pageData.containsKey("sendDepartment") || pageData["sendUserName"] == null,
@@ -250,10 +309,12 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                         border: true, phone: false, phoneNum: pageData['sendUserPhone']
                       ),
                     ),
-                    ListItem(title: '优先级', content: warningMap[pageData["priority"]]),
+                    ListItem(title: '优先级', content: warningMap[pageData["priority"]],border: true),
                   ],
                 )
               ),
+              // 抄送人
+              CopierItem(clickCB: _getCopierID),
               // 内容
               Container(
                 margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(22)),
@@ -261,6 +322,10 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                 height: ScreenUtil.getInstance().setHeight(220),
                 child: Column(
                   children: <Widget>[
+                    Offstage(
+                      offstage: pageData["deviceName"] == null || pageData["deviceName"] == "",
+                      child: ListItem(title: '设备', content: pageData["deviceName"] == null || pageData["deviceName"] == "" ? "暂无" : pageData["deviceName"]),
+                    ),
                     Container(
                       padding: EdgeInsets.all(ScreenUtil.getInstance().setWidth(30)),
                       alignment: Alignment.centerLeft,
@@ -271,6 +336,28 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                       child: Text(pageData['taskContent'], maxLines: 5,style: TextStyle(fontSize: fontSize,color: Colors.white)),
                     ),
                   ],
+                ),
+              ),
+              // 重修(重修的时候才会有)
+              Offstage(
+                offstage: pageData["rebuild"] == "" || pageData["rebuild"] == null,
+                child: Container(
+                  margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(22)),
+                  color: Color.fromARGB(100, 12, 33, 53),
+                  height: ScreenUtil.getInstance().setHeight(220),
+                  child: Column(
+                    children: <Widget>[
+                      Container(
+                        padding: EdgeInsets.all(ScreenUtil.getInstance().setWidth(30)),
+                        alignment: Alignment.centerLeft,
+                        child: Text('重修原因',style: TextStyle(fontSize: fontSize,color: Colors.white70)),
+                      ),
+                      Container(
+                        width: ScreenUtil.getInstance().setWidth(690),
+                        child: Text(pageData["rebuild"] == null? "" : pageData['rebuild'], maxLines: 5,style: TextStyle(fontSize: fontSize,color: Colors.white)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               // 备注
@@ -297,6 +384,52 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                   ],
                 ),
               ),
+              // 现场照片
+              Offstage(
+                offstage: picListBefore.length == 0,
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.only(left: ScreenUtil.getInstance().setWidth(30)),
+                  child: Text('现场照片', style: TextStyle(color:Colors.white)),
+                ),
+              ),
+              Container(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: boxs(picListBefore ,picListBefore.length),
+                ),
+                margin: EdgeInsets.fromLTRB(
+                  0.0,
+                  ScreenUtil.getInstance().setHeight(20),
+                  0.0,
+                  ScreenUtil.getInstance().setHeight(20)
+                ),
+              ),
+              // 处理后照片
+              Offstage(
+                offstage: picList.length == 0,
+                child: Container(
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.only(left: ScreenUtil.getInstance().setWidth(30)),
+                  child: Text('处理后照片', style: TextStyle(color:Colors.white)),
+                ),
+              ),
+              Container(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: boxs(picList ,picList.length),
+                ),
+                margin: EdgeInsets.fromLTRB(
+                  0.0,
+                  ScreenUtil.getInstance().setHeight(20),
+                  0.0,
+                  ScreenUtil.getInstance().setHeight(20)
+                ),
+              ),
               // 完成时限
               Offstage(
                 offstage: !flag,
@@ -306,7 +439,7 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                   color: Colors.greenAccent
                 ),
               ),
-              ListItem(title: '上次照片', content: '', background: Colors.transparent,marginTop: ScreenUtil.getInstance().setHeight(10)),
+              ListItem(title: '上传照片', content: '', background: Colors.transparent,marginTop: ScreenUtil.getInstance().setHeight(10)),
               // 照片预览
               Row(
                 children: <Widget>[
@@ -337,7 +470,9 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
                           builder: (BuildContext context) {
                             return Container(
                               height: 200,
-                              child: UploadImg(
+                              child: ButtonGroup(
+                                context2: context,
+                                titleList: ["拍照","相册"],
                                 imageCallback: (imgFile) => getImage(imgFile)
                               ),
                             );
@@ -366,5 +501,54 @@ class _WorkOrderContentState extends State<WorkOrderContent> {
         )
       ),
     ); 
+  }
+
+  List<Widget> boxs(_picList,length) => List.generate(length, (index) {
+    return Container(
+      width: ScreenUtil.getInstance().setWidth(360),
+      height: ScreenUtil.getInstance().setHeight(270),
+      alignment: Alignment.centerLeft,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(3),
+        child: CachedNetworkImage(
+          placeholder: (context, url) => CircularProgressIndicator(),
+          imageUrl: _picList[index],
+          width: ScreenUtil.getInstance().setWidth(340),
+          height: ScreenUtil.getInstance().setHeight(255),
+          fit: BoxFit.cover,
+        )
+      )
+    );
+  });
+}
+
+
+class StatusButton extends StatelessWidget {
+  StatusButton({
+    Key key,
+    this.color,
+    this.label
+  }):super();
+  final color;
+  final label;
+
+  @override
+  Widget build(BuildContext context) {
+    ScreenUtil.instance = ScreenUtil(width: 750, height: 1334, allowFontScaling: true)..init(context);
+    return Container(
+      margin: EdgeInsets.only(right: ScreenUtil.instance.setWidth(60)),
+      alignment: Alignment.centerRight,
+      child: Container(
+        decoration: BoxDecoration(
+          color: this.color,
+          borderRadius: BorderRadius.all(Radius.circular(3))
+        ),
+        width: ScreenUtil.instance.setWidth(80),
+        height: ScreenUtil.instance.setHeight(40),
+        child: Center(
+          child: Text(this.label ?? "",style: TextStyle(color: Colors.white)),
+        )
+      )
+    );
   }
 }

@@ -14,8 +14,8 @@ class NoteEntry extends StatelessWidget {
                 Text(title , style: TextStyle(color: white_name_color)),
                 Container(
                   child: TextField(
-                    maxLength: 50,
-                    maxLines: 3,
+                    maxLength: 100,
+                    maxLines: 5,
                     cursorColor: Colors.white, //光标颜色
                     onChanged: (newValue) {
                       if (change != null) {
@@ -28,7 +28,7 @@ class NoteEntry extends StatelessWidget {
                     ),
                     decoration: InputDecoration(
                         border: InputBorder.none, // 边框样式
-                        hintText: '请输入备注，最多50字',
+                        hintText: '请输入内容，最多100字',
                         hintStyle: TextStyle(color: Color.fromRGBO(150, 150, 150, 1)),
                         helperStyle: TextStyle(color: Color.fromRGBO(150, 150, 150, 1))
                     )

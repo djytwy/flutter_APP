@@ -34,7 +34,7 @@
          FlutterApplication and put your custom class here. -->
     <application
         android:name="io.flutter.app.FlutterApplication"
-        android:label="工单管理系统"
+        android:label="运维工单系统"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"
@@ -55,5 +55,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:name="com.apptreesoftware.barcodescan.BarcodeScannerActivity"/>
+        <uses-library android:name="org.apache.http.legacy" android:required="false"/>
     </application>
 </manifest>

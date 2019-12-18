@@ -40,7 +40,7 @@ class _CustPickerState extends State<CustPicker> {
     // TODO: implement initState
     if(widget.defaultGrade != false) {
       setState(() {
-        result = '中';
+        result = widget.defaultGrade;
       });
     }
     super.initState();
@@ -50,7 +50,6 @@ class _CustPickerState extends State<CustPicker> {
   void didUpdateWidget (CustPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
     String text = widget.setData;
-    print('组件更新: $text');
     if(widget.flag && widget.setData != null) 
       setState(() {
         result = widget.setData;
@@ -90,17 +89,20 @@ class _CustPickerState extends State<CustPicker> {
     Picker picker = Picker(
       adapter: PickerDataAdapter<String>(pickerdata: JsonDecoder().convert(widget.itemsString)),
       changeToFirst: true,
+      headercolor: Color.fromARGB(255, 0, 20, 37),
+      backgroundColor: Color.fromARGB(255, 0, 20, 37),
       textAlign: TextAlign.left,
       textStyle: const TextStyle(color: Colors.blue),
       selectedTextStyle: TextStyle(color: Colors.red),
-      columnPadding: const EdgeInsets.all(8.0),
       cancelText:'取消',
       confirmText: '确定',
+      columnPadding: EdgeInsets.all(0.0),
       onConfirm: (Picker picker, List value) {
-        // print(value.toString());                 // 选择的数组的位置
-        // print(picker.getSelectedValues());       // 选择的数据
+
         result = '';
         for (var index in picker.getSelectedValues()) {
+          // picker.getSelectedValues());       // 选择的数据
+          // value;                             // 选择的数组的位置
           result += index;
         }
         _pickerCallback(result, value);

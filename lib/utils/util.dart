@@ -3,8 +3,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-
 import '../pages/Login.dart';
+import '../services/pageHttpInterface/Login.dart';
 
 const white_color = Color.fromRGBO(255, 255, 255, 1);// 白色
 const white_name_color = Color.fromRGBO(224, 224, 224, 1);// 白色名称颜色
@@ -35,7 +35,7 @@ void hideTotast(){
 // 设置宽高，字体大小， margin ,padding 间距 的自适应方法
 class SelfAdapt {
   SelfAdapt.init(BuildContext context) {
-    ScreenUtil.instance = ScreenUtil(width: 375, height: 667, allowFontScaling: true)..init(context);
+    ScreenUtil.instance = ScreenUtil(width: 375, height: 672, allowFontScaling: true)..init(context);
   }
   setWidth(double n){
     return ScreenUtil().setWidth(n.toDouble());
@@ -58,38 +58,44 @@ Future getLocalStorage(String name) async {
 }
 
 // 获取权限
-// 50 -- 管理员， 51 -- 报修，  52 -- 维修， 53 -- 换班申请， 54 -- 排班表展示
-Future getAllAuths() async{
+// 50 -- 管理员， 51 -- 报修，  52 -- 维修， 53 -- 换班申请， 54 -- 排班表展示 ,86 -- 质检员
+Future getAllAuths() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  String  str = await prefs.getString('authMenus'); 
-  List list = json.decode(str);
-  Map data = {
-    'admin': list.any((element)=>(element == 50)), // 管理员权限
-    'repair': list.any((element)=>(element == 51)),// 报修权限
-    'keepInRepair': list.any((element)=>(element == 52)), // 维修权限
-    'addShiftDuty': list.any((element)=>(element == 53)),  // 换班申请
-    'shiftDutyShow': list.any((element)=>(element == 54)),  //排班表展示
-    'shiftDutyManage': list.any((element)=>(element == 48)),  // 排班管理
-  };
-  // Map data = {
-  //   'admin': true, // 管理员权限
-  //   'repair': true,// 报修权限
-  //   'keepInRepair': true, // 维修权限
-  //   'addShiftDuty': true, // 换班申请
-  //   'shiftDutyShow': true, //排班表展示
-  //   'shiftDutyManage': true, // 排班管理
-  // };
+  String  str = await prefs.getString('authMenus');
+  Map data;
+  if(str !=null) {
+    List list = json.decode(str);
+    data = {
+      'admin': list.any((element)=>(element == 50)), // 管理员权限
+      'repair': list.any((element)=>(element == 51)),// 报修权限
+      'keepInRepair': list.any((element)=>(element == 52)), // 维修权限
+      'addShiftDuty': list.any((element)=>(element == 53)),  // 换班申请
+      'shiftDutyShow': list.any((element)=>(element == 54)),  //排班表展示
+      'shiftDutyManage': list.any((element)=>(element == 48)),  // 排班管理
+      'check': list.any((element) => (element == 86)),    // 质检员权限
+    };
+  } else {
+    data = {
+      'admin': false, // 管理员权限
+      'repair': false,// 报修权限
+      'keepInRepair': false, // 维修权限
+      'addShiftDuty': false,  // 换班申请
+      'shiftDutyShow': false,  //排班表展示
+      'shiftDutyManage': false,  // 排班管理
+      'check': false  // 质检员权限
+    };
+  }
   return data;
 }
 
-// 获取初始化当前日期字符串
-String getCurrentDay(){
+// 获取初始化当前日期字符串 1：年，2：月，3日
+String getCurrentTime({timeParams:int}) {
   var item = new DateTime.now();
   String year = item.year.toString();
   String month = item.month >= 10 ? item.month.toString() : '0'+item.month.toString();
   String day = item.day >= 10 ? item.day.toString(): '0'+item.day.toString();
   String str = year +'-'+ month +'-'+day;
-  return str;
+  return timeParams == 3 ? str : timeParams == 2 ? year +'-'+ month : year;
 }
 
 // 弹出提示
@@ -112,77 +118,68 @@ void showAlertDialog(BuildContext context,{String title = '提示',String text =
                 ),
                 child: Column(
                   children: <Widget>[
-                      Container(
-                        height: _adapt.setHeight(100),
-                        width: double.infinity,
-                        padding: EdgeInsets.only(top: _adapt.setHeight(20)),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.all(Radius.circular(5)),
-                           gradient: LinearGradient(colors: [Color.fromRGBO(0, 17, 27, 1), Color.fromRGBO(20, 47, 83, 1), Color.fromRGBO(20, 47, 83, 1), Color.fromRGBO(0, 17, 27, 1)], begin: FractionalOffset(1, 1), end: FractionalOffset(0, 1))
-                          // color: Color.fromRGBO(25, 51, 87, 1)
-                          // image: new DecorationImage(
-                          //   alignment: Alignment.topLeft,
-                          //   image: new AssetImage('assets/images/dialogBackg.png'), 
-                          //   fit: BoxFit.fill 
-                          // ),
-                        ),
-                        child: Column(
-                          children: <Widget>[
-                              // Container(
-                                // child: 
-                                Text( title, style: TextStyle( color: Colors.white, fontSize: _adapt.setFontSize(16), fontWeight: FontWeight.bold)),
-                              // ),
-                              Container(
-                                margin: EdgeInsets.only(top: _adapt.setHeight(12)),
-                                child: Text( text, style: TextStyle( color: Colors.white, fontSize: _adapt.setFontSize(12), fontWeight: FontWeight.bold)),
-                              )
-                          ],
-                        ),
+                    Container(
+                      height: _adapt.setHeight(100),
+                      width: double.infinity,
+                      padding: EdgeInsets.only(top: _adapt.setHeight(20)),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(5)),
+                         gradient: LinearGradient(colors: [Color.fromRGBO(0, 17, 27, 1), Color.fromRGBO(20, 47, 83, 1), Color.fromRGBO(20, 47, 83, 1), Color.fromRGBO(0, 17, 27, 1)], begin: FractionalOffset(1, 1), end: FractionalOffset(0, 1))
                       ),
-                      Container(
-                        width: double.infinity,
-                        height: _adapt.setHeight(1),
-                        color: Color.fromRGBO(58, 132, 238, 1),
+                      child: Column(
+                        children: <Widget>[
+                          Text( title, style: TextStyle( color: Colors.white, fontSize: _adapt.setFontSize(16), fontWeight: FontWeight.bold)),
+                          Container(
+                            margin: EdgeInsets.only(top: _adapt.setHeight(12)),
+                            child: Text( text, style: TextStyle( color: Colors.white, fontSize: _adapt.setFontSize(12), fontWeight: FontWeight.bold)),
+                          )
+                        ],
                       ),
-                      Container(
-                        height: _adapt.setHeight(43),
-                        child: Row(
-                          children: <Widget>[
-                            Expanded(
-                              child: GestureDetector(
-                                  onTap: (){
-                                    if(onCancel != null){
-                                        onCancel();
-                                    }
-                                    Navigator.of(context).pop();
-                                  },
-                                  child: Container(
-                                    alignment: Alignment.center,
-                                    child: Text('取消', style: TextStyle(color: white_name_color, fontSize: _adapt.setFontSize(16))),
-                                  ),
-                              )
-                            ),
-                            Expanded(
-                              child: GestureDetector(
+                    ),
+                    Container(
+                      width: double.infinity,
+                      height: _adapt.setHeight(1),
+                      color: Color.fromRGBO(58, 132, 238, 1),
+                    ),
+                    Container(
+                      height: _adapt.setHeight(43),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: GestureDetector(
                                 onTap: (){
-                                  if (onOk != null) {
-                                    onOk();
+                                  if(onCancel != null){
+                                      onCancel();
                                   }
                                   Navigator.of(context).pop();
                                 },
                                 child: Container(
-                                    alignment: Alignment.center,
-                                    child: Text('确认', style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16))),
-                                    decoration: BoxDecoration(
-                                      color: Color.fromRGBO(58, 132, 238, 1),
-                                      borderRadius: BorderRadius.only( bottomRight: Radius.circular(3))
-                                    ),
+                                  alignment: Alignment.center,
+                                  child: Text('取消', style: TextStyle(color: white_name_color, fontSize: _adapt.setFontSize(16))),
                                 ),
-                              )
                             )
-                          ],
-                        ),
-                      )
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: (){
+                                if (onOk != null) {
+                                  onOk();
+                                }
+                                Navigator.of(context).pop();
+                              },
+                              child: Container(
+                                  alignment: Alignment.center,
+                                  child: Text('确认', style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16))),
+                                  decoration: BoxDecoration(
+                                    color: Color.fromRGBO(58, 132, 238, 1),
+                                    borderRadius: BorderRadius.only( bottomRight: Radius.circular(3))
+                                  ),
+                              ),
+                            )
+                          )
+                        ],
+                      ),
+                    )
                   ],
                 ),
               )
@@ -194,23 +191,28 @@ void showAlertDialog(BuildContext context,{String title = '提示',String text =
 // 上下文
 var CTX;
 // 退出登陆
-void signOut() async{
+void signOut() async {
   if(CTX != null){
     SharedPreferences prefs = await SharedPreferences.getInstance();
-      prefs.remove('token');
-      prefs.remove('menus');
-      prefs.remove('userName');
-      prefs.remove('postName');
-      prefs.remove('userId');
-      prefs.remove('departmentName');
-      prefs.remove('phoneNum');
-      Navigator.pushReplacement(CTX.currentState.overlay.context, MaterialPageRoute(
-          builder: (context) => new Test()
-      ));
-      // CTX.currentState.pushReplacement();
+    // 调用一次登出的接口
+    if(prefs.containsKey('token')) await loginOut();
+    prefs.remove('token');
+    prefs.remove('menus');
+    prefs.remove('userName');
+    prefs.remove('postName');
+    prefs.remove('userId');
+    prefs.remove('departmentName');
+    prefs.remove('phoneNum');
+    Navigator.pushReplacement(CTX.currentState.overlay.context, MaterialPageRoute(
+        builder: (context) => new Login()
+    ));
   }
 }
 
 
+// 补零函数
+String addZero(int time) {
+  return time.toString().length >1 ? time.toString() : '0${time.toString()}';
+}
 
 

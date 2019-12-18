@@ -1,3 +1,4 @@
+import 'package:app_tims_hotel/pages/barcodeScan/barcodeScan.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,11 +10,13 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'dart:async';
 import '../../utils/util.dart';
 import '../../pages/workOrder/inTimeWorkOrder.dart';
-import '../ModifyPassword.dart';
 import '../../utils/eventBus.dart';
+import 'view/drawerPage.dart';
+import 'view/BottomSheet.dart';
+import '../../services/pageHttpInterface/Login.dart';
 
 const String MIN_DATETIME = '2010-05-12';
-const String MAX_DATETIME = '2021-11-25';
+const String MAX_DATETIME = '2099-11-25';
 
 class Home extends StatefulWidget {
   Home({Key key}) : super(key: key);
@@ -55,6 +58,7 @@ class _HomeState extends State<Home> {
   // TextEditingController _formatCtrl = TextEditingController();
 
   DateTime _dateTime;
+  String _project; // 项目关联的数据库
   // 用户信息
   String _token = '';
   String _menus = '';
@@ -81,30 +85,107 @@ class _HomeState extends State<Home> {
   // 即时工单的数据
   int _currentOrderAll = 0;
   List _currentOrderData = [];
+  // 项目信息
+  String _projectName = '';
+  String Online = '0';
+  String Outline = '0';
+  List peopleData = [
+    {
+      'label': '暂无人员',
+      'children': [
+      ]
+    },
+  ];
 
-  // 版本号
-  String _version;
 
   @override
   void initState() {
     super.initState();
     _initUserInfo();
+    // 获取当前在线、离线人数
+    getOnlineOutline();
     //监听访问详情事件，来刷新通知消息
     bus.on("refreshHome", (arg) {
       _initUserInfo();
    });
   }
+
   @override
-    void dispose() {
-      super.dispose();
-      bus.off("refreshHome");//移除广播监听
+  void dispose() {
+    super.dispose();
+    bus.off("refreshHome");//移除广播监听
   }
-  _initUserInfo() async{
+
+  // 获取在线的人数和离线的人数
+  Future<void> getOnlineOutline() async {
+    List _test1 = List.generate(10, (e) => {
+      "classificationName": "落魄前端在线炒饭部",
+      "userCode": "123",
+      "userName": "炒饭$e号",
+      "parentName": "无所谓",
+      "online": e%2 == 0?  "online" : "outline"
+    });
+    List _test2 = List.generate(10, (e) => {
+      "classificationName": "落魄Java在线炒粉部",
+      "userCode": "123",
+      "userName": "炒粉$e号",
+      "parentName": "无所谓",
+      "online": e%2 == 0?  "online" : "outline"
+    });
+//    Map _data = {
+//      "onlineCount": '10',
+//      "offlineCount": '20',
+//      "onDutyOnlineUserList": [
+//        ..._test1, ..._test2
+//      ]
+//    };
+    Map _data = await toGetOnlineOutline();
+    // 组装好返回的数据
+    List _tempData = [];
+    // 已经添加过的部门
+    List addedClassify = [];
+
+    if(_data!= null && _data["onDutyOnlineUserList"].length > 0) {
+      for (var _index in _data["onDutyOnlineUserList"]) {
+        if (!addedClassify.contains(_index["classificationName"])) {
+          _tempData.add({
+            'label': _index["classificationName"],
+            'children': [{
+              'label': _index["userName"],
+              'status': _index["online"] == 'online' ? 1 : 2,
+              'children': []
+            }]
+          });
+          addedClassify.add(_index["classificationName"]);
+        } else {
+          _tempData.forEach((e) {
+            if (e["label"] == _index["classificationName"]) {
+              e["children"].add({
+                'label': _index["userName"],
+                'status': _index["online"] == 'online' ? 1 : 2,
+                'children': []
+              });
+            }
+          });
+        }
+      }
+
+      setState(() {
+        Online = _data['onlineCount'].toString();
+        Outline = _data['offlineCount'].toString();
+        peopleData = _tempData;
+      });
+    }
+  }
+
+  _initUserInfo() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
+      // debug模式进入调试版本
+      _project = kReleaseMode ? (prefs.getString('project') ?? null) : '调试版本';
       _token = (prefs.getString('token') ?? '');
     });
-    if (_token != '') {
+    if (_token != '' && _project != null) {
       setState(() {
         _menus = (prefs.getString('authMenus') ?? '');
         _userName = (prefs.getString('userName') ?? '');
@@ -112,35 +193,39 @@ class _HomeState extends State<Home> {
         _departmentName = (prefs.getString('departmentName') ?? '');
         _phoneNum = (prefs.getString('phoneNum') ?? '');
         _userId = (prefs.getString('userId') ?? '');
+        _projectName = (prefs.getString('projectName') ?? '');
         if (_menus.indexOf('50') != -1) {
           setState(() {
             _userId = '-1';
           });
         }
       });
-      final nowDay = DateTime.now();
-      var nowData = nowDay.toString().substring(0,10);
-      getTaskCountByTaskType(_token,_userId,nowData);
-      getCurrentPeople(_token,nowData);
-      getOrderData(_token,_userId,nowData);
-      getCurrentOrderData(_token,_userId,nowData);
-      // 初始化版本号
-      _genVersion();
-    } else {
+
+      getTaskCountByTaskType(_token,_userId);
+      getCurrentPeople(_token);
+      getOrderData(_token,_userId);
+      getCurrentOrderData(_token,_userId);
+    } else if (_token == '' && _project != null) {
       showTotast('您还未登录,1秒之后将跳转到登录页面','center');
       const timeout = const Duration(seconds: 1);
       Timer(timeout, () {
       //到时回调
         Navigator.pushReplacement(context, MaterialPageRoute(
-          builder: (context) => new Test(
-          )
+          builder: (context) => Login()
+        ));
+      });
+    } else {
+      showTotast('您还未进行手机绑定，1秒后跳转到手机绑定页');
+      await Future.delayed(Duration(seconds: 1), () {
+        Navigator.pushReplacement(context, MaterialPageRoute(
+          builder: (context) => BarcodeScan()
         ));
       });
     }
   }
-  // 获取及时工单和巡检/维保的数据
-  void getTaskCountByTaskType(token,userId,date) {
-    getTaskCount(token,userId,date).then((val) {
+  // 获取即时工单和巡检/维保的数据
+  void getTaskCountByTaskType(token,userId) {
+    getTaskCount(token,userId).then((val) {
       setState(() {
         _orderLabel = val[0]['label'];
         _orderAll = val[0]['zong'];
@@ -151,20 +236,19 @@ class _HomeState extends State<Home> {
         _siteNo = val[1]['wei'];
         _siteHas = val[1]['lv'];
       });
-      print(_orderLabel);
     });
   }
   // 获取当前在岗人数的数据
-  void getCurrentPeople(token,date) {
-    getCountPeople(token,date).then((val) {
+  void getCurrentPeople(token) {
+    getCountPeople(token).then((val) {
       setState(() {
         _currentPeopleNum = val;
       });
     });
   }
   // 获取工单来源的数据
-  void getOrderData(token,userId,date) {
-    getOrderSource(token,userId,date).then((val) {
+  void getOrderData(token,userId) {
+    getOrderSource(token,userId).then((val) {
       print(val);
       setState(() {
         _orderSourceAll = val['taskCount'];
@@ -173,8 +257,8 @@ class _HomeState extends State<Home> {
     });
   }
   // 获取即时工单的数据
-  void getCurrentOrderData(token,userId,date) {
-    getCurrentOrder(token,userId,date).then((val) {
+  void getCurrentOrderData(token,userId) {
+    getCurrentOrder(token,userId).then((val) {
       print(val);
       setState(() {
         _currentOrderAll = val['taskCount'];
@@ -182,7 +266,21 @@ class _HomeState extends State<Home> {
       });
     });
   }
-  void signOut() async{
+
+  // 判断图表数据的长度是否大于4，若小于4，则补到4,用于图表渲染占位
+  List<ClicksPerYear> handleChartData(data) {
+    if(data.length < 4) {
+      Map stringMap = {0:'',1:'  ',2:'   ',3:'    '};
+      int loopNum = 4-data.length;
+      for (int _index = 0; _index<loopNum; _index++) {
+        String _labelTemp = stringMap[_index];
+        data.add(ClicksPerYear(_labelTemp, 0, Colors.blue),);
+      }
+    }
+    return data;
+  }
+
+  void signOut() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove('token');
     prefs.remove('menus');
@@ -191,10 +289,11 @@ class _HomeState extends State<Home> {
     prefs.remove('userId');
     prefs.remove('departmentName');
     prefs.remove('phoneNum');
+    // 调用一次登出的接口
+    await loginOut();
     Navigator.pop(context);
     Navigator.pushReplacement(context, MaterialPageRoute(
-      builder: (context) => new Test(
-      )
+      builder: (context) => new Login()
     ));
   }
   // 下面的_showDatePicker是需求变更了，暂时注释，勿删！
@@ -225,45 +324,32 @@ class _HomeState extends State<Home> {
         if (_format == 'yyyy') {
           var year = _dateTime.toString().substring(0,4);
           print(year);
-          getTaskCountByTaskType(_token,_userId,year);
-          getOrderData(_token,_userId,year);
-          getCurrentOrderData(_token,_userId,year);
+          getTaskCountByTaskType(_token,_userId);
+          getOrderData(_token,_userId);
+          getCurrentOrderData(_token,_userId);
         } else if (_format == 'yyyy-MMMM') {
           var mounth = _dateTime.toString().substring(0,7);
-          getTaskCountByTaskType(_token,_userId,mounth);
-          getOrderData(_token,_userId,mounth);
-          getCurrentOrderData(_token,_userId,mounth);
+          getTaskCountByTaskType(_token,_userId);
+          getOrderData(_token,_userId);
+          getCurrentOrderData(_token,_userId);
           print(mounth);
         } else if (_format == 'yyyy-MMMM-dd') {
           var day = _dateTime.toString().substring(0,10);
-          getTaskCountByTaskType(_token,_userId,day);
-          getOrderData(_token,_userId,day);
-          getCurrentOrderData(_token,_userId,day);
+          getTaskCountByTaskType(_token,_userId);
+          getOrderData(_token,_userId);
+          getCurrentOrderData(_token,_userId);
         }
       },
     );
   }
-  
-  // 生成版本号
-  void _genVersion() {
-    DateTime now = DateTime.now();
-    dynamic version = (now.day + 10).toString();
-    dynamic year = (now.year).toString();
-    dynamic month = (now.month).toString();
-    dynamic day = (now.day).toString();
-    setState(() {
-      _version = '0.0.$version _ $year$month$day';
-    });
-  }
+
   Widget build(BuildContext context) {
     // 图表1的数据信息
-    var data = [
-      new ClicksPerYear('2016', 12, Colors.red),
-    ];
-    data.removeLast();
+    List<ClicksPerYear> data = [];
     for (var item in _orderData) {
-      data.add(new ClicksPerYear(item['label'], item['num'], Color.fromRGBO(106, 167, 255, 1)));
+      data.add(new ClicksPerYear(item['label'], item['num'], Color.fromARGB(255, 74, 144, 226)));
     }
+    data = handleChartData(data);
     var series = [
       new charts.Series(
         domainFn: (ClicksPerYear clickData, _) => clickData.year,
@@ -271,30 +357,47 @@ class _HomeState extends State<Home> {
         colorFn: (ClicksPerYear clickData, _) => clickData.color,
         id: 'Clicks',
         data: data,
+        labelAccessorFn: (ClicksPerYear clickData, _) => '${clickData.clicks}'
       ),
     ];
     
     var chart = new charts.BarChart(
       series,
       animate: true,
-      primaryMeasureAxis:
-        new charts.NumericAxisSpec(renderSpec: new charts.NoneRenderSpec()),
+      domainAxis: charts.OrdinalAxisSpec(
+        // 初始化显示4个条状图，配合
+        viewport: charts.OrdinalViewport('', 4),
+        // 显示标签文字的style
+        renderSpec: charts.SmallTickRendererSpec(
+          labelStyle: charts.TextStyleSpec(
+            color: charts.Color.white
+          )
+        )
+      ),
+      // 使用基础度量单位，没有基础参考线
+      primaryMeasureAxis: charts.NumericAxisSpec(renderSpec: new charts.NoneRenderSpec()),
+      // 可缩放
+      behaviors: [charts.PanAndZoomBehavior()],
+      // 条状图头上的label样式
+      barRendererDecorator: charts.BarLabelDecorator<String>(
+        outsideLabelStyleSpec: charts.TextStyleSpec(color: charts.Color.white),
+        labelPosition: charts.BarLabelPosition.outside
+      ),
     );
-    var chartWidget = new Padding(
-      padding: new EdgeInsets.only(right: 16.0,left: 16.0),
+    var orderFrom = new Padding(
+      padding: new EdgeInsets.only(right: 0.5,left: 0.5),
       child: new SizedBox(
         height: 200.0,
         child: chart,
       ),
     );
+
     // 图表2的数据信息
-    var data2 = [
-      new ClicksPerYear('2016', 12, Colors.red),
-    ];
-    data2.removeLast();
+    List<ClicksPerYear> data2 = [];
     for (var item in _currentOrderData) {
-      data2.add(new ClicksPerYear(item['label'], item['num'], Color.fromRGBO(106, 167, 255, 1)));
+      data2.add(ClicksPerYear(item['label'], item['num'], Color.fromARGB(255, 74, 144, 226)));
     }
+    data2 = handleChartData(data2);
     var series2 = [
       new charts.Series(
         domainFn: (ClicksPerYear clickData, _) => clickData.year,
@@ -302,58 +405,41 @@ class _HomeState extends State<Home> {
         colorFn: (ClicksPerYear clickData, _) => clickData.color,
         id: 'Clicks',
         data: data2,
+        labelAccessorFn: (ClicksPerYear clickData, _) => '${clickData.clicks}'
       ),
     ];
     var chart2 = new charts.BarChart(
       series2,
       animate: true,
-      primaryMeasureAxis:    // 显示基础图表，莫得线
-        new charts.NumericAxisSpec(renderSpec: new charts.NoneRenderSpec()),
+      // 显示基础图表，莫得线
+      primaryMeasureAxis: charts.NumericAxisSpec(renderSpec: charts.NoneRenderSpec()),
+      domainAxis: charts.OrdinalAxisSpec(
+        // 初始化显示3个条状图
+        viewport: charts.OrdinalViewport('', 4),
+        // 显示标签文字的style
+        renderSpec: charts.SmallTickRendererSpec(
+          labelStyle: charts.TextStyleSpec(
+            color: charts.Color.white
+          )
+        )
+      ),
+      // 可缩放
+      behaviors: [charts.PanAndZoomBehavior()],
+      // bar顶上的label样式
+      barRendererDecorator: charts.BarLabelDecorator<String>(
+        outsideLabelStyleSpec: charts.TextStyleSpec(color: charts.Color.white),
+        labelPosition: charts.BarLabelPosition.outside
+      ),
     );
-    var chartWidget2 = new Padding(
-      padding: new EdgeInsets.only(right: 16.0,left: 16.0),
+    var intimeOrder = new Padding(
+      padding: new EdgeInsets.only(right:0.5,left:0.5),
       child: new SizedBox(
         height: 200.0,
         child: chart2,
       ),
     );
-    ScreenUtil.instance = ScreenUtil(width: 375, height: 667, allowFontScaling: true)..init(context);
-    Widget header = DrawerHeader(
-      padding: EdgeInsets.zero, /* padding置为0 */
-      child: new Stack(children: <Widget>[ /* 用stack来放背景图片 */
-        // new Image.asset(
-        //   'assets/images/background.png', fit: BoxFit.fill, width: double.infinity,),
-        new Align(/* 先放置对齐 */
-          alignment: FractionalOffset.center,
-          child: Container(
-            // height: 100.0,
-            width: setWidth(100),
-            margin: EdgeInsets.only(left: 12.0, bottom: 12.0),
-            child: new Column(
-              mainAxisSize: MainAxisSize.min, /* 宽度只用包住子组件即可 */
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: <Widget>[
-                new Container(
-                  child: Center(
-                    child: new CircleAvatar(
-                    backgroundImage: AssetImage('assets/images/LOGO.png'),
-                    radius: 35.0,),
-                    ),
-                ),
-                new Container(
-                  margin: EdgeInsets.only(top: 15.0),
-                  child: Center(
-                    child: new Text(this._userName, style: new TextStyle(
-                      fontSize: 16.0,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white),),
-                  )
-                ),
-              ],),
-          ),
-        ),
-      ]),);
+    ScreenUtil.instance = ScreenUtil(width: 375, height: 672, allowFontScaling: true)..init(context);
+    SelfAdapt _adpt = SelfAdapt.init(context); // 使用util工具
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
@@ -412,492 +498,384 @@ class _HomeState extends State<Home> {
         centerTitle: true,
         backgroundColor: Colors.transparent
       ),
-      drawer: new Drawer(
-        child: new Container(
-          decoration: new BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage("assets/images/background.png"),
-              fit: BoxFit.cover
-            )
-          ),
-          child: ListView(
-          padding: EdgeInsets.zero,
-          children: <Widget>[
-            header,  // 上面是自定义的header
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),top: setHeight(20),bottom: setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text('部门',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text(this._departmentName,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text('电话',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text(this._phoneNum,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: Container(
-                margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
-                color: Color.fromRGBO(4, 38, 83, 0.35),
-                height: setHeight(45),
-                child: Row(
-                  children: <Widget>[
-                    new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text('职位',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
-                    ),
-                     new Padding(
-                      padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                      child: new Text(this._postName,style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
-                    )
-                  ],
-                )
-              ),
-              enabled: false,
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              title: GestureDetector(
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (context) => new ModifyPassword()
-                  ));
-                },
-                child: Container(
-                  margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),bottom: setHeight(10)),
-                  color: Color.fromRGBO(4, 38, 83, 0.35),
-                  height: setHeight(45),
-                  child: Row(
-                    children: <Widget>[
-                      new Padding(
-                        padding: EdgeInsets.only(left: setHeight(10),right: setHeight(10)),
-                        child: new Text('修改密码',style: TextStyle(color: Color(0xFF999999),fontSize: setFontSize(16))),
-                      ),
-                      new Padding(
-                        padding: EdgeInsets.only(left: setHeight(100)),
-                        child: Icon(Icons.keyboard_arrow_right,color: Color(0xFF999999),),
-                      )
-                    ],
-                  )
-                ),
-              )
-            ),
-            ListTile(
-              title: GestureDetector(
-                 onTap: signOut,
-                 child: Container(
-                    margin: EdgeInsets.only(left: setHeight(10),right: setHeight(10),top: setHeight(90)),
-                    color: Color.fromRGBO(4, 38, 83, 0.35),
-                    height: setHeight(45),
-                    child: new Center(
-                      child: new Text('退出登录',style: TextStyle(color: Color(0xFFffffff),fontSize: setFontSize(16))),
-                    )
-                  ),
-              )
-             ),
-            Container(
-              margin: EdgeInsets.only(top: ScreenUtil.getInstance().setHeight(160)),
-              child: kReleaseMode ? Text('正式版本号: $_version',style:TextStyle(color:Colors.white54)) : Text('debug 版本号: $_version',style:TextStyle(color:Colors.white54)),
-            )
-          ],
-          ),
-        ),
+      drawer: Drawer(
+        child: drawerPage(_projectName,_userName, _adpt, _postName, _phoneNum, _departmentName, context),
       ),
       body: CustomScrollView(
         slivers: <Widget>[
           new SliverToBoxAdapter(
             child: Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage("assets/images/background.png"),
-            fit: BoxFit.cover
-          )
-        ),
-        child: new SingleChildScrollView(
-          child: Container(
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, //居左
-              children: <Widget>[
-                Offstage(
-                  offstage: this._work,
-                  child: Container(
-                    child: Column(
-                      children: <Widget>[
-                        Container(
-                          height: setHeight(72),
-                          color: Color.fromRGBO(4, 38, 83, 0.35),
-                          margin: EdgeInsets.only(top: setHeight(10)),
-                          child: Row(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: AssetImage("assets/images/background.png"),
+                  fit: BoxFit.cover
+                )
+              ),
+              child: new SingleChildScrollView(
+                child: Container(
+                  child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, //居左
+                    children: <Widget>[
+                      Offstage(
+                        offstage: this._work,
+                        child: Container(
+                          child: Column(
                             children: <Widget>[
-                              Expanded(
-                                child: Container(
-                                  height: setHeight(48),
-                                  child: GestureDetector(
-                                    child: Center(
-                                      child: Column(
-                                        children: <Widget>[
-                                          Expanded(
-                                            child: Container(
-                                              child: GestureDetector(
-                                                child: Center(
-                                                  // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),)
-                                                  child: Image.asset('assets/images/people.png'),
+                              gradientLine(true),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Color.fromRGBO(4, 38, 83, 0.35),
+                                ),
+                                height: setHeight(72),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Container(
+                                        height: setHeight(48),
+                                        child: GestureDetector(
+                                          child: Center(
+                                            child: Column(
+                                              children: <Widget>[
+                                                Expanded(
+                                                  child: GestureDetector(
+                                                    child: Center(
+                                                      child: Image.asset('assets/images/people.png'),
+                                                    ),
+                                                  ),
                                                 ),
-                                              ),
+                                                Expanded(
+                                                  child: Container(
+                                                    child: GestureDetector(
+                                                      child: Center(
+                                                        child: Text('当前在岗人数', style: TextStyle(color: Color(0xFFffffff), fontSize: setFontSize(14))),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                )
+                                              ],
                                             ),
                                           ),
-                                          Expanded(
-                                            child: Container(
-                                              child: GestureDetector(
-                                                child: Center(
-                                                  child: Text('当前在岗人数', style: TextStyle(color: Color(0xFFffffff), fontSize: setFontSize(14)),),
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                        ],
+                                        ),
+                                      )
+                                    ),
+                                    Expanded(
+                                      flex: 0,
+                                      child: Container(
+                                        width: setWidth(1),
+                                        height: setHeight(44),
+                                        color: Color.fromRGBO(76, 135, 179, 1),
                                       ),
                                     ),
-                                  ),
-                                )
-                              ),
-                              Expanded(
-                                flex: 0,
-                                child: Container(
-                                  width: setWidth(1),
-                                  height: setHeight(44),
-                                  color: Color.fromRGBO(76, 135, 179, 1),
-                                ),
-                              ),
-                              Expanded(
-                                child: Center(
-                                    child: Text(this._currentPeopleNum.toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: setFontSize(60)),),
-                                  )
-                              )
-                            ],
-                          ),
-                        ),
-                        Container(
-                          height: setHeight(90),
-                          color: Color.fromRGBO(4, 38, 83, 0.35),
-                          margin: EdgeInsets.only(top: setHeight(10)),
-                          child: Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Container(
-                                  child: Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Container(
-                                          child: Center(
-                                            // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
-                                            child: Image.asset('assets/images/now.png',width: setWidth(54),height: setHeight(54),),
-                                          ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        child: Center(
+                                          child: Text(this._currentPeopleNum.toString(), style: TextStyle(color: Color.fromRGBO(106, 167, 255, 1), fontSize: setFontSize(60))),
                                         ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          child: Center(
-                                            child: Column(
-                                              children: <Widget>[
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Center(
-                                                      child: Text(this._orderAll.toString(),style: TextStyle(color: Color(0xFF81E2E7),fontSize:  setFontSize(40))),
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Center(
-                                                      child: Text(this._orderLabel,style: TextStyle(color: Color(0xFFffffff),fontSize:  setFontSize(14))),
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
-                                            )
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(1),
-                                          height: setHeight(80),
-                                          margin: EdgeInsets.only(right: setHeight(5)),
-                                          color: Color(0xFF010D1D),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(120),
-                                          child: Center(
-                                            child: Column(
-                                              children: <Widget>[
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Row(
-                                                      children: <Widget>[
-                                                       new Center(
-                                                          child: new Text('未完成数:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
-                                                        ),
-                                                        new Padding(
-                                                          padding: new EdgeInsets.only(left: 8.0,top: 4.0),
-                                                          child: new Text(this._orderNo.toString(),style: TextStyle(color: Color(0XFFff5500),fontSize: setFontSize(14)),),
-                                                        )
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Row(
-                                                      children: <Widget>[
-                                                        new Center(
-                                                          child: new Text('已完成率:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
-                                                        ),
-                                                        new Padding(
-                                                          padding: new EdgeInsets.only(left: 8.0,top: 4.0),
-                                                          child: new Text(this._orderHas,style: TextStyle(color: Color(0XFF00FF00),fontSize: setFontSize(14)),),
-                                                        )
-                                                      ],
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(20),
-                                          margin: EdgeInsets.only(right: setHeight(20)),
-                                          child: Center(
-                                            child: new IconButton(
-                                              icon: Icon(Icons.keyboard_arrow_right,color: Color(0xFFffffff),),
-                                              onPressed: () {
-                                                print(this._token);
-                                                Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => InTimeWorkOrder(taskType:"0")
-                                                ));
-                                              },
-                                            )
-                                          ),
-                                        ),
+                                        onTap: () async {
+                                          await getOnlineOutline();
+                                          showModalBottomSheet(
+                                            elevation: 80.0,
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return PeopleBottomSheet(
+                                                online: Online,
+                                                outline: Outline,
+                                                data: peopleData,
+                                              );
+                                            }
+                                          );
+                                        },
                                       )
-                                    ],
-                                  ),
+                                    )
+                                  ],
                                 ),
-                              )
-                          ],),
-                        ),
-                        Container(
-                          height: setHeight(90),
-                          color: Color.fromRGBO(4, 38, 83, 0.35),
-                          margin: EdgeInsets.only(top: setHeight(10)),
-                          child: Row(
-                            children: <Widget>[
-                              Expanded(
-                                child: Container(
-                                  child: Row(
-                                    children: <Widget>[
-                                      Expanded(
-                                        child: Container(
-                                          child: Center(
-                                            // child: Icon(Icons.people,color: Color.fromRGBO(106, 167, 255, 1),size: 40,),
-                                            child: Image.asset('assets/images/bao.png',width: setWidth(54),height: setHeight(54),),
-                                          ),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          child: Center(
-                                            child: Column(
-                                              children: <Widget>[
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Center(
-                                                      child: Text(this._siteAll.toString(),style: TextStyle(color: Color(0xFF81E2E7),fontSize:  setFontSize(40))),
-                                                    ),
+                              ),
+                              gradientLine(false),
+                              Container(
+                                height: setHeight(90),
+                                color: Color.fromRGBO(4, 38, 83, 0.35),
+                                margin: EdgeInsets.only(top: setHeight(10)),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Container(
+                                        child: Row(
+                                          children: <Widget>[
+                                            Expanded(
+                                              child: Container(
+                                                child: Center(
+                                                  child: Image.asset('assets/images/now.png',width: setWidth(54),height: setHeight(54),),
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Container(
+                                                child: Center(
+                                                  child: Column(
+                                                    children: <Widget>[
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Center(
+                                                            child: Text(this._orderAll.toString(),style: TextStyle(color: Color(0xFF81E2E7),fontSize:  setFontSize(40))),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Center(
+                                                            child: Text(this._orderLabel,style: TextStyle(color: Color(0xFFffffff),fontSize:  setFontSize(14))),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  )
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(1),
+                                                height: setHeight(80),
+                                                margin: EdgeInsets.only(right: setHeight(5)),
+                                                color: Color(0xFF010D1D),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(120),
+                                                child: Center(
+                                                  child: Column(
+                                                    children: <Widget>[
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Row(
+                                                            children: <Widget>[
+                                                             new Center(
+                                                                child: new Text('未完成数:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
+                                                              ),
+                                                              new Padding(
+                                                                padding: new EdgeInsets.only(left: 4.0,top: 4.0),
+                                                                child: new Text(this._orderNo.toString(),style: TextStyle(color: Color(0XFFff5500),fontSize: setFontSize(14)),),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Row(
+                                                            children: <Widget>[
+                                                              Container(
+                                                                child: Text('已完成率:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
+                                                              ),
+                                                              new Padding(
+                                                                padding: new EdgeInsets.only(left: 4.0,top: 4.0),
+                                                                child: new Text(this._orderHas,style: TextStyle(color: Color(0XFF00FF00),fontSize: setFontSize(14))),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Center(
-                                                      child: Text(this._siteLabel,style: TextStyle(color: Color(0xFFffffff),fontSize:  setFontSize(14))),
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(20),
+                                                margin: EdgeInsets.only(right: setHeight(20)),
+                                                child: Center(
+                                                  child: new IconButton(
+                                                    icon: Icon(Icons.keyboard_arrow_right,color: Color(0xFFffffff),),
+                                                    onPressed: () {
+                                                      Navigator.push(context, MaterialPageRoute(
+                                                        builder: (context) => InTimeWorkOrder(taskType:"0")
+                                                      ));
+                                                    },
+                                                  )
+                                                ),
+                                              ),
                                             )
-                                          ),
+                                          ],
                                         ),
                                       ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(1),
-                                          height: setHeight(80),
-                                          margin: EdgeInsets.only(right: setHeight(5)),
-                                          color: Color(0xFF010D1D),
-                                        ),
-                                      ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(120),
-                                          child: Center(
-                                            child: Column(
-                                              children: <Widget>[
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Row(
-                                                      children: <Widget>[
-                                                        new Center(
-                                                          child: new Text('未完成数:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
+                                    )
+                                ],),
+                              ),
+                              Container(
+                                height: setHeight(90),
+                                color: Color.fromRGBO(4, 38, 83, 0.35),
+                                margin: EdgeInsets.only(top: setHeight(10)),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Container(
+                                        child: Row(
+                                          children: <Widget>[
+                                            Expanded(
+                                              child: Container(
+                                                child: Center(
+                                                  child: Image.asset('assets/images/bao.png',width: setWidth(54),height: setHeight(54)),
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              child: Container(
+                                                child: Center(
+                                                  child: Column(
+                                                    children: <Widget>[
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Center(
+                                                            child: Text(this._siteAll.toString(),style: TextStyle(color: Color(0xFF81E2E7),fontSize:  setFontSize(40))),
+                                                          ),
                                                         ),
-                                                        new Padding(
-                                                          padding: new EdgeInsets.only(left: 8.0,top: 4.0),
-                                                          child: new Text(this._siteNo.toString(),style: TextStyle(color: Color(0XFFff5500),fontSize: setFontSize(14)),),
-                                                        )
-                                                      ],
-                                                    ),
+                                                      ),
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Center(
+                                                            child: Text(this._siteLabel,style: TextStyle(color: Color(0xFFffffff),fontSize:  setFontSize(14))),
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
+                                                  )
+                                                ),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(1),
+                                                height: setHeight(80),
+                                                margin: EdgeInsets.only(right: setHeight(5)),
+                                                color: Color(0xFF010D1D),
+                                              ),
+                                            ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(120),
+                                                child: Center(
+                                                  child: Column(
+                                                    children: <Widget>[
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Row(
+                                                            children: <Widget>[
+                                                              new Center(
+                                                                child: new Text('未完成数:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
+                                                              ),
+                                                              new Padding(
+                                                                padding: new EdgeInsets.only(left: 4.0,top: 4.0),
+                                                                child: new Text(this._siteNo.toString(),style: TextStyle(color: Color(0XFFff5500),fontSize: setFontSize(14)),),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Expanded(
+                                                        child: Container(
+                                                          child: Row(
+                                                            children: <Widget>[
+                                                              new Center(
+                                                                child: new Text('已完成率:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
+                                                              ),
+                                                              new Padding(
+                                                                padding: new EdgeInsets.only(left: 4.0,top: 4.0),
+                                                                child: new Text(this._siteHas,style: TextStyle(color: Color(0XFF00FF00),fontSize: setFontSize(14)),),
+                                                              )
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      )
+                                                    ],
                                                   ),
                                                 ),
-                                                Expanded(
-                                                  child: Container(
-                                                    child: Row(
-                                                      children: <Widget>[
-                                                        new Center(
-                                                          child: new Text('已完成率:',style: TextStyle(color: Color(0XFFffffff),fontSize: setFontSize(14)),),
-                                                        ),
-                                                        new Padding(
-                                                          padding: new EdgeInsets.only(left: 8.0,top: 4.0),
-                                                          child: new Text(this._siteHas,style: TextStyle(color: Color(0XFF00FF00),fontSize: setFontSize(14)),),
-                                                        )
-                                                      ],
-                                                    ),
-                                                  ),
-                                                )
-                                              ],
+                                              ),
                                             ),
-                                          ),
+                                            Expanded(
+                                              flex: 0,
+                                              child: Container(
+                                                width: setWidth(20),
+                                                margin: EdgeInsets.only(right: setHeight(20)),
+                                                child: Center(
+                                                  child: new IconButton(
+                                                    icon: Icon(Icons.keyboard_arrow_right,color: Color(0XFFffffff),),
+                                                    onPressed: () {
+                                                      Navigator.push(context, MaterialPageRoute(
+                                                        builder: (context) => InTimeWorkOrder(taskType:"1")
+                                                      ));
+                                                    },
+                                                  ),
+                                                ),
+                                              ),
+                                            )
+                                          ],
                                         ),
                                       ),
-                                      Expanded(
-                                        flex: 0,
-                                        child: Container(
-                                          width: setWidth(20),
-                                          margin: EdgeInsets.only(right: setHeight(20)),
-                                          child: Center(
-                                            child: new IconButton(
-                                              icon: Icon(Icons.keyboard_arrow_right,color: Color(0XFFffffff),),
-                                              onPressed: () {
-                                                print('我要跳到哪');
-                                                Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => InTimeWorkOrder(taskType:"1")
-                                                ));
-                                              },
-                                            ),
-                                          ),
+                                    )
+                                ],),
+                              ),
+                              SizedBox(
+                                height: 10.0,
+                              ),
+                              Container(
+                                color: Color.fromRGBO(4, 38, 83, 0.35),
+                                child: Column(
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        new Padding(
+                                          padding: new EdgeInsets.only(left: 16.0),
+                                          child: Text('工单来源   |   总数:',style: TextStyle(color: Color(0xFFffffff)),),
                                         ),
-                                      )
-                                    ],
-                                  ),
+                                        new Padding(
+                                          padding: new EdgeInsets.only(top: 4.0,left: 8.0),
+                                          child: Center(child: Text(this._orderSourceAll.toString(),style: TextStyle(color: Color(0xFF0099FF)),)),
+                                        )
+                                      ],
+                                    ),
+                                    orderFrom,
+                                  ],
                                 ),
-                              )
-                          ],),
-                        ),
-                        Container(
-                          color: Color.fromRGBO(4, 38, 83, 0.35),
-                          child: Column(
-                            children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  new Padding(
-                                    padding: new EdgeInsets.only(left: 16.0),
-                                    child: Text('工单来源   |   总数:',style: TextStyle(color: Color(0xFFffffff)),),
-                                  ),
-                                  new Padding(
-                                    padding: new EdgeInsets.only(top: 4.0,left: 8.0),
-                                    child: Center(child: Text(this._orderSourceAll.toString(),style: TextStyle(color: Color(0xFF0099FF)),)),
-                                  )
-                                ],
                               ),
-                              chartWidget,
+                              Container(
+                                color: Color.fromRGBO(4, 38, 83, 0.35),
+                                margin: new EdgeInsets.only(top: 16.0),
+                                child: Column(
+                                  children: <Widget>[
+                                    Row(
+                                      children: <Widget>[
+                                        new Padding(
+                                          padding: new EdgeInsets.only(left: 16.0),
+                                          child: Text('即时工单   |   总数:',style: TextStyle(color: Color(0xFFffffff)),),
+                                        ),
+                                        new Padding(
+                                          padding: new EdgeInsets.only(top: 4.0,left: 8.0),
+                                          child: Center(
+                                            child: Text(this._currentOrderAll.toString(),style: TextStyle(color: Color(0xFF0099FF)))
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                    intimeOrder,
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        Container(
-                          color: Color.fromRGBO(4, 38, 83, 0.35),
-                          margin: new EdgeInsets.only(top: 16.0),
-                          child: Column(
-                            children: <Widget>[
-                              Row(
-                                children: <Widget>[
-                                  new Padding(
-                                    padding: new EdgeInsets.only(left: 16.0),
-                                    child: Text('即时工单   |   总数:',style: TextStyle(color: Color(0xFFffffff)),),
-                                  ),
-                                  new Padding(
-                                    padding: new EdgeInsets.only(top: 4.0,left: 8.0),
-                                    child: Center(child: Text(this._currentOrderAll.toString(),style: TextStyle(color: Color(0xFF0099FF)),)),
-                                  )
-                                ],
-                              ),
-                              chartWidget2,
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-        ), 
-      ),
-      )
+              ),
+            )
           ),
         ],
       )
@@ -913,6 +891,17 @@ class ClicksPerYear {
   ClicksPerYear(this.year, this.clicks, Color color)
       : this.color = new charts.Color(
       r: color.red, g: color.green, b: color.blue, a: color.alpha);
+}
+
+// 渐变色线条
+Widget gradientLine(isTop) {
+  return Container(
+    margin: isTop ? EdgeInsets.only(top: 10.0) : EdgeInsets.only(top: 0.0),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: [Colors.transparent, Color.fromARGB(255, 59, 137, 249), Colors.transparent]),
+    ),
+    height: setHeight(1),
+  );
 }
 // 设置宽度
 setWidth(double n){

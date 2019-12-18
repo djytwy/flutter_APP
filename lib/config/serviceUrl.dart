@@ -1,6 +1,11 @@
 import 'package:flutter/foundation.dart';
 
-const serviceUrl= kReleaseMode ? 'https://tesing.china-tillage.com' : 'https://ghhmzjd.tillage-cloud.com:9443';
+/*
+  关联ajax文件
+*/
+var releaseUrl; // 二维码用的url
+// var serviceUrl = !kReleaseMode ? 'https://tesing.china-tillage.com:9443' : 'https://ghhmzjd.tillage-cloud.com:9443';
+var serviceUrl = kReleaseMode ? releaseUrl : releaseUrl;
 const servicePath = {
   // 报修相关接口
   'ReportFixData': '/workorder/areaConfig/getTaskAllAreaByTreeName',
@@ -32,5 +37,13 @@ const servicePath = {
   // 获取抄送人列表
   'getCopierList': '/workorder/imsUserInfo/getUserListByDeparment',
   // 获取默认抄送人
-  'getDefaulttCopierList': '/workorder/imsUserInfo/getCopyUserList'
+  'getDefaulttCopierList': '/workorder/imsUserInfo/getCopyUserList',
+  // 上传二维码并获得识别结果
+  'barcode':'https://tlapp-manage.tillage-cloud.com:20443/appConfig/appInfo/upload',
+  // 验收处理
+  'check': '/workorder/task/getTaskInfoByCheckUser',
+  // 获取在线人员和离线人员
+  'onlineOutline' : '/systemconfig/app/getOnlineUser',
+  // 退出
+  'loginOut': '/systemconfig/app/logout'
 };

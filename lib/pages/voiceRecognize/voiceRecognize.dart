@@ -26,7 +26,8 @@ class _VoicePageState extends State<VoicePage> {
     });
     if(result != null && result != "") {
       Map <String, dynamic> _recognizeResult = await postVoiceData(result);
-      if(_recognizeResult["msg"] != "处理成功" || _recognizeResult.containsValue(null)) {
+      if (_recognizeResult == null) showTotast('您说话的顺序不对哦，请重新说话','center');
+      else if(_recognizeResult["msg"] != "处理成功" || _recognizeResult.containsValue(null)) {
         showTotast('您说话的顺序不对哦，请重新说话','center');
       } else {
         Navigator.pop(context,_recognizeResult);
@@ -134,8 +135,8 @@ class _VoicePageState extends State<VoicePage> {
                             child: Text(speechResult, style:TextStyle(color: Colors.white,fontSize: _adapt.setFontSize(18))),
                           ),
                           Container(
-                            child: speeching ? Image(image: AssetImage('assets/images/test.gif'),width: _adapt.setWidth(150),height: _adapt.setHeight(100),) 
-                            : Image(image: AssetImage('assets/images/staticTest.png'),width: _adapt.setWidth(150),height: _adapt.setHeight(100)),
+                            child: speeching ? Image(image: AssetImage('assets/images/wave.gif'),width: _adapt.setWidth(180),height: _adapt.setHeight(100),)
+                            : Image(image: AssetImage('assets/images/stop.png'),width: _adapt.setWidth(180),height: _adapt.setHeight(100)),
                           ), 
                           Container(
                             child: VoiceRecognize(

@@ -28,12 +28,7 @@ class _VoiceState extends State<VoiceRecognize> {
   void initState() {
     super.initState();
     initPlatformState();
-    
   }
-
-  // Future askForPermissions() async {
-  //   Map<PermissionGroup, PermissionStatus> permissions = await PermissionHandler().requestPermissions([PermissionGroup.microphone]);
-  // }
 
   // Platform messages are asynchronous, so we initialize in an async method.
   Future<void> initPlatformState() async {
@@ -43,16 +38,16 @@ class _VoiceState extends State<VoiceRecognize> {
     param.domain = 'iat';
     param.asr_ptt = '0';
     // 四川话的参数
-    param.accent = 'lmz';
+    // param.accent = 'lmz';
     param.asr_audio_path = 'xme.pcm';
     param.result_type = 'plain';
     voice.setParameter(param.toMap());
   }
 
-  // 申请麦克风权限
+  // 申请麦克风、存储权限
   Future askForPermissions() async {
     await PermissionHandler().requestPermissions([PermissionGroup.microphone,
-      PermissionGroup.storage, PermissionGroup.reminders]);
+      PermissionGroup.storage]);
   }
 
   @override

@@ -6,6 +6,7 @@ import '../../services/pageHttpInterface/workOrderList.dart';
 import '../../services/pageHttpInterface/comWorkOrder.dart';      // 红点未读相关
 import 'package:fluttertoast/fluttertoast.dart';
 import '../../utils/util.dart';
+import '../../utils/eventBus.dart';
 
 class WorkOrderList extends StatefulWidget {
   WorkOrderList({
@@ -13,7 +14,7 @@ class WorkOrderList extends StatefulWidget {
     this.userID,
     this.workOrderType
   }) : super(key: key);
-  final workOrderType;  // 返回的类型: workOrderType: 0 新工单 1 我的工单 2 我的报修 3退单处理 4 挂起
+  final workOrderType;  // 返回的类型: workOrderType: 0 新工单 1 我的工单 2 验收处理 3退单处理 4 挂起
   final userID;
 
   _WorkOrderListState createState() => _WorkOrderListState();
@@ -29,7 +30,15 @@ class _WorkOrderListState extends State<WorkOrderList> {
   int _count = 0;  // 消息数量
   List idList = [];  // 接口返回的未读消息ID的list   
   Map msgMap = {}; // 所有消息的List
-  String userId;  // 获取到userId                                
+  String userId;  // 获取到userId
+  String _totalNum = "0";  // 工单的总数
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    bus.emit('refreshTask');
+  }
 
   @override
   void initState() {
@@ -41,6 +50,14 @@ class _WorkOrderListState extends State<WorkOrderList> {
       _getData(null);
     });
     _controller = EasyRefreshController();
+
+    bus.on("refreshList", ([arg]) async {
+      await Future.delayed(Duration(seconds: 1));
+      _refreshData();
+      if(arg == null){
+        bus.emit('refreshMenu');
+      }
+    });
   }
 
   Future _unReadMsg() async {
@@ -54,7 +71,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
        params['msgStatus'] = '100';
     }else if (widget.workOrderType == '1') {// 我的工单
         params['msgStatus'] = '101';
-    }else if(widget.workOrderType == '2'){// 我的报修
+    }else if(widget.workOrderType == '2'){// 验收处理
         params['msgStatus'] = '102';
     }else if(widget.workOrderType == '3'){//退单处理
         params['msgStatus'] = '103';
@@ -64,7 +81,6 @@ class _WorkOrderListState extends State<WorkOrderList> {
     final val = await unReadMsg(params);
     setState(() {
       for(var item in val) {
-        // msgList.add(item["msg_id"]);
         if(item["msg_ext_id"] != "" && item["msg_ext_id"] != null) {
           msgMap[item["msg_ext_id"]] = item["msg_id"];
           idList.add(item["msg_ext_id"]);
@@ -112,6 +128,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
               item["msgId"] = "";
             }
           }
+          _totalNum = data['total'].toString();
         });
       }
     });
@@ -122,22 +139,18 @@ class _WorkOrderListState extends State<WorkOrderList> {
   }
 
   // 时间转换，将昨天，和今天的显示为昨天，今天，而非 XXXX-MM-DD这种格式
-  String _converTime(time) {
+  String _convertTime(time) {
     DateTime _time = DateTime.parse(time);
     final nowDay = DateTime.now();
     final yesterday = nowDay.subtract(Duration(days: 1));
     int hour = _time.hour;
     int min = _time.minute;
-    String _min = "";
-    if(min < 10){
-      _min = "0$min";
-    }
     // 秒暂时未用
     int seconds = _time.second;
     if (_time.day == nowDay.day && _time.month == nowDay.month && _time.year == nowDay.year) {
-      return min < 10 ? '$hour:$_min' : '$hour:$min';
+      return '${addZero(hour)}:${addZero(min)}';
     } else if (_time.day == yesterday.day && _time.month == yesterday.month && _time.year == yesterday.year) {
-      return min < 10 ? '昨天 $hour:$_min' : '昨天 $hour:$min';
+      return '昨天 ${addZero(hour)}:${addZero(min)}';
     } else 
       return time;
   }
@@ -163,7 +176,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
             child: Text(
               widget.workOrderType.toString() == '1' ? '我的工单':
               widget.workOrderType.toString() == '0' ? '新工单':
-              widget.workOrderType.toString() == '2' ? '我的报修':
+              widget.workOrderType.toString() == '2' ? '验收处理':
               widget.workOrderType.toString() == '3' ? '退单处理':
               widget.workOrderType.toString() == '4' ? '挂起' : '错误',
               style: TextStyle(fontSize: ScreenUtil.getInstance().setSp(36))
@@ -182,7 +195,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
               Container(
                 alignment: Alignment.centerLeft,
                 margin: EdgeInsets.all(10),
-                child: Text('共 $_count 单', style: TextStyle(color: Colors.white60,fontSize: ScreenUtil.getInstance().setSp(20)))      
+                child: Text('共 $_totalNum 单', style: TextStyle(color: Colors.white60,fontSize: ScreenUtil.getInstance().setSp(20)))
               ),
               Expanded(
                 child: EasyRefresh(
@@ -198,7 +211,7 @@ class _WorkOrderListState extends State<WorkOrderList> {
                         fontSize: fontSize,
                         place: listData[index].containsKey("areaName") ? listData[index]["areaName"]: '无',
                         status: statusList[listData[index]["taskNowState"]] == '待验收' ? "" : statusList[listData[index]["taskNowState"]],
-                        time: _converTime(listData[index]["addTime"]),
+                        time: _convertTime(listData[index]["addTime"]),
                         orderID: listData[index]["ID"],
                         redPoint: listData[index]["redPoint"],
                         workOrderType: widget.workOrderType,

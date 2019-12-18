@@ -13,11 +13,11 @@ class ListItem extends StatelessWidget {
     this.color,
     this.background,
     this.border=false,
-    this.marginTop
+    this.marginTop,
+    this.labelWidget
   }) : super(key: key);
 
-    final TelAndSmsService _service = locator<TelAndSmsService>();    // 使用打电话功能
-
+  final TelAndSmsService _service = locator<TelAndSmsService>();    // 使用打电话功能
   final title;                  // 每一行的title
   final content;                // 每一行的内容
   final phone;                  // 电话标志 如果false则显示电话
@@ -26,6 +26,7 @@ class ListItem extends StatelessWidget {
   final border;                 // 是否显示下边框
   final background;             // 背景色
   final marginTop;              // 上边距
+  Widget labelWidget;            // 传入的label
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +52,7 @@ class ListItem extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: Container(
-              child: Text(title, textAlign: TextAlign.left,style: TextStyle(color: color != null ? color : Colors.white)),
+              child: Text(title == null ? "" : title, textAlign: TextAlign.left,style: TextStyle(color: color != null ? color : Colors.white)),
             ),
           ),
           Offstage(
@@ -65,6 +66,7 @@ class ListItem extends StatelessWidget {
               ),
             ),
           ),
+          labelWidget == null ? Text(''): labelWidget,
           Text(content == null ? '暂无' : content, textAlign: TextAlign.right,style: TextStyle(color: color != null ? color : Colors.white))
         ],
       ),

@@ -35,7 +35,7 @@ class _InApprovalState extends State<InApproval> {
     getLocalStorage('userId').then((value){
       setState(() {
         userId = int.parse(value);
-        dateString = getCurrentDay();
+        dateString = getCurrentTime(timeParams: 2);
       });
       this.getPageData();
     });

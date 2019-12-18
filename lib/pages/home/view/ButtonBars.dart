@@ -1,6 +1,7 @@
 // 页面的列表按钮
 import 'package:flutter/material.dart';
 import '../../../utils/util.dart';
+
 class ButtonBars extends StatelessWidget {
   ButtonBars({ Key key, this.title, this.number = 0, this.callCback }) : super(key: key);
   String title = '';
@@ -8,8 +9,6 @@ class ButtonBars extends StatelessWidget {
   Function callCback;
   @override
   Widget build(BuildContext context) {
-    //  String title = title;
-    // int number = number;
     // 设置 设计图和设备的 宽高比例
     var _adapt = SelfAdapt.init(context);
     return Container(

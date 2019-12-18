@@ -9,6 +9,13 @@ import '../../components/ListBarComponents.dart';
 import './view/MultipleRowTexts.dart';
 import '../../components/SplitLine.dart';
 
+// 退单原因、挂起原因
+import './view/repairReason.dart';
+import '../../components/listItem.dart';
+// 抄送人
+import 'view/copierItem.dart';
+
+
 
 class Chargeback extends StatefulWidget {
   Chargeback({Key key, this.orderID}) : super(key: key);
@@ -20,6 +27,7 @@ class Chargeback extends StatefulWidget {
 class _Chargeback extends State<Chargeback> {
 
   List userList = []; //人员列表
+  List copierList = []; // 抄送人员列表
   var userId; //用户id
   int taskId; //工单id
   Map pageData = {//页面数据
@@ -32,7 +40,8 @@ class _Chargeback extends State<Chargeback> {
     'sendUserPhone':'', // 电话号码
     'sendUserId': 0, // 报修人id
     'ID': -1, // 工单id
-  }; 
+  };
+
   @override
   void initState(){
     super.initState();
@@ -72,73 +81,81 @@ class _Chargeback extends State<Chargeback> {
       builder: (BuildContext context){
         var _adapt = SelfAdapt.init(context);
         return Container(
-              height: _adapt.setHeight(220),
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    height: _adapt.setHeight(46),
-                    padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
-                    color: Color.fromRGBO(0,20,37,1),
-                    child: Row(
-                      children: <Widget>[
-                        Container(
-                          width: _adapt.setWidth(40),
-                          child: FlatButton(
-                            onPressed: (){
-                              Navigator.pop(context);
-                            },
-                            child: Icon(Icons.close, color: Colors.white),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text('更多', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
-                        )
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Container(
-                      padding: EdgeInsets.only(top: _adapt.setHeight(22)),
-                      color: Color.fromRGBO(0, 20, 37, 1),
-                      child: Column(
-                        children: <Widget>[
-                            Container(
-                              height: _adapt.setHeight(44),
-                              margin: EdgeInsets.only(top: _adapt.setHeight(8), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                              decoration: new BoxDecoration(
-                                color: Color.fromRGBO(113, 166, 241, 1),
-                                borderRadius: new BorderRadius.all(new Radius.circular(5)),
-                              ),
-                              child: ListTile(
-                                  title: Text( '无法处理', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                                  onTap: () async {
-                                    dispatchSheet(optionType: 8);
-                                    Navigator.pop(context);
-                                  }
-                                )
-                            ),
-                            Container(
-                              height: _adapt.setHeight(44),
-                              margin: EdgeInsets.only(top: _adapt.setHeight(7), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                              decoration: new BoxDecoration(
-                                color: Color.fromRGBO(113, 166, 241, 1),
-                                borderRadius: new BorderRadius.all(new Radius.circular(5)),
-                              ),
-                              child: ListTile(
-                                  title: Text( '挂起', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
-                                  onTap: () async {
-                                    dispatchSheet(optionType: 9);
-                                    Navigator.pop(context);
-                                  }
-                                )
-                            )
-                        ],
+          height: _adapt.setHeight(220),
+          child: Column(
+            children: <Widget>[
+              Container(
+                height: _adapt.setHeight(46),
+                padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
+                color: Color.fromRGBO(0,20,37,1),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: _adapt.setWidth(40),
+                      child: FlatButton(
+                        onPressed: (){
+                          Navigator.pop(context);
+                        },
+                        child: Icon(Icons.close, color: Colors.white),
                       ),
                     ),
-                  )
-                ],
+                    Expanded(
+                      child: Text('更多', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
+                    )
+                  ],
+                ),
               ),
-          );
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.only(top: _adapt.setHeight(22)),
+                  color: Color.fromRGBO(0, 20, 37, 1),
+                  child: Column(
+                    children: <Widget>[
+                      Container(
+                        height: _adapt.setHeight(44),
+                        margin: EdgeInsets.only(top: _adapt.setHeight(8), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                        decoration: new BoxDecoration(
+                          color: Color.fromRGBO(113, 166, 241, 1),
+                          borderRadius: new BorderRadius.all(new Radius.circular(5)),
+                        ),
+                        child: ListTile(
+                          title: Text( '无法处理', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (context) =>  RepairReason(
+                                orderID: taskId,
+                                optionType: 8,
+                              )
+                            ));
+                          }
+                        )
+                      ),
+                      Container(
+                        height: _adapt.setHeight(44),
+                        margin: EdgeInsets.only(top: _adapt.setHeight(7), bottom: _adapt.setHeight(8), left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                        decoration: new BoxDecoration(
+                          color: Color.fromRGBO(113, 166, 241, 1),
+                          borderRadius: new BorderRadius.all(new Radius.circular(5)),
+                        ),
+                        child: ListTile(
+                          title: Text( '挂起', textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
+                          onTap: () {
+                            Navigator.push(context, MaterialPageRoute(
+                              builder: (context) =>  RepairReason(
+                                orderID: taskId,
+                                optionType: 9,
+                              )
+                            ));
+                          }
+                        )
+                      )
+                    ],
+                  ),
+                ),
+              )
+            ],
+          ),
+        );
       }
     );
   }
@@ -150,39 +167,39 @@ class _Chargeback extends State<Chargeback> {
         context: context,
         builder: (BuildContext context){
           return Container(
-              child: Column(
-                children: <Widget>[
-                  Container(
-                    height: _adapt.setHeight(46),
-                    padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
-                    color: Color.fromRGBO(0,20,37,1),
-                    child: Row(
-                      children: <Widget>[
-                        Container(
-                          width: _adapt.setWidth(40),
-                          child: FlatButton(
-                            onPressed: (){
-                              Navigator.pop(context);
-                            },
-                            child: Icon(Icons.close, color: Colors.white),
-                          ),
+            child: Column(
+              children: <Widget>[
+                Container(
+                  height: _adapt.setHeight(46),
+                  padding: EdgeInsets.only(left: _adapt.setWidth(0), right: _adapt.setWidth(40)),
+                  color: Color.fromRGBO(0,20,37,1),
+                  child: Row(
+                    children: <Widget>[
+                      Container(
+                        width: _adapt.setWidth(40),
+                        child: FlatButton(
+                          onPressed: (){
+                            Navigator.pop(context);
+                          },
+                          child: Icon(Icons.close, color: Colors.white),
                         ),
-                        Expanded(
-                          child: Text('请选择处理人', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
-                        )
-                      ],
-                    ),
+                      ),
+                      Expanded(
+                        child: Text('请选择处理人', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: _adapt.setFontSize(16)),),
+                      )
+                    ],
                   ),
-                  Expanded(
-                    child: ListView(
-                      children: ListTile.divideTiles(
-                        context: context,
-                        tiles: moreFillData(userList, dispatchSheet, context)
-                      ).toList()
-                    ),
-                  )
-                ],
-              ),
+                ),
+                Expanded(
+                  child: ListView(
+                    children: ListTile.divideTiles(
+                      context: context,
+                      tiles: moreFillData(userList, dispatchSheet, context)
+                    ).toList()
+                  ),
+                )
+              ],
+            ),
           );
         }
       );
@@ -205,13 +222,26 @@ class _Chargeback extends State<Chargeback> {
       params['new_userId'] = newUserId; //新的处理角色
     }else if (newUserId == null && optionType != null) { // 无法处理 - 挂起 - 指派给自己
       params['optionType'] = optionType;
-    } 
+    }
+    // 抄送人员
+    params['copyUser'] = copierList;
     // 派单
     getdispatchSheet(params).then((data){
-      bus.emit("refreshTask");
-      Navigator.pop(context, true); //操作成功返回
+      if(data is bool && data == true){
+        bus.emit("refreshTask");
+        Navigator.pop(context, true); //操作成功返回
+      }
     });
   }
+
+  // 回调函数获得选中的抄送人ID
+  void _getCopierID(List _copierList) {
+    dynamic tempList = _copierList.map((e) => e["userID"]);
+    setState(() {
+      copierList = tempList.toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // 判断 优先级
@@ -230,7 +260,7 @@ class _Chargeback extends State<Chargeback> {
     if(pageData['sendDepartment'] != null){
       String sendDepartment = pageData['sendDepartment'];
       reporter = reporter + ' ($sendDepartment)';
-    } 
+    }
     return Container(
       decoration: BoxDecoration(
         image: DecorationImage(
@@ -239,107 +269,117 @@ class _Chargeback extends State<Chargeback> {
         )
       ),
       child: Scaffold(
-              backgroundColor: Colors.transparent,
-              appBar: AppBar(
-                title: Text('退单',style: TextStyle(fontSize: _adapt.setFontSize(18))),
-                centerTitle: true,
-                actions: <Widget>[
-                  Container(
-                    alignment: Alignment.center,
-                    margin: EdgeInsets.only(right: _adapt.setWidth(15)),
-                    height: 30,
-                    child: Container(
-                      child: GestureDetector(
-                        onTap: (){
-                          pageMoreModalList();
-                        },
-                        child: Text('更多',style: TextStyle(color: Color.fromRGBO(90, 166, 255, 1))),
-                      )
-                    )
-                  )
-                ],
-                backgroundColor: Colors.transparent
-              ),
-              body:  Column(
-                children: <Widget>[
-                  Expanded(
-                    child: SingleChildScrollView(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start, //居左
-                            children: <Widget>[
-                              Container( //报修人/抄送人/处理岗位/处理人
-                                child: Column(children: <Widget>[
-                                  ListBarComponents(name: '地点', value: pageData['areaName']),
-                                  SplitLine(),
-                                  ListBarComponents(name: '时间', value: pageData['addTime']),
-                                  SplitLine(), 
-                                  ListBarComponents(name: '报修人', value: reporter, ishidePhone: false, tel: pageData['sendUserPhone']),
-                                  SplitLine(), 
-                                  ListBarComponents(name: '优先级', value: priorityName),
-                                ]),
-                                height: _adapt.setHeight(183),
-                                width: double.infinity,
-                                color: module_background_color,
-                                padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
-                                margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
-                              ),
-                              MultipleRowTexts(name:'内容', value: pageData['taskContent']),
-                              Container(
-                                child: Row(children: <Widget>[
-                                  Expanded(
-                                    child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
-                                    flex: 1,
-                                  ),
-                                  Expanded(
-                                    child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
-                                    flex: 1,
-                                  ),
-                                ]),
-                                padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
-                                margin: EdgeInsets.only(top: _adapt.setHeight(8)),
-                                color: module_background_color,
-                                width: double.infinity,
-                                height: _adapt.setHeight(45),
-                              ),
-                              MultipleRowTexts(name:'退单原因', value: pageData['remarks'] == null ? '': pageData['remarks']),
-                              Container(
-                                child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
-                                margin: EdgeInsets.only(top: _adapt.setHeight(19), bottom: _adapt.setHeight(20)),
-                                padding: EdgeInsets.only(left: _adapt.setWidth(15)),
-                              ),
-                          ]
-                        ),
-                    ),
-                  ),
-                  ButtonsComponents(leftName: '驳回', rightName:'同意',cbackRight: pageModalBottomSheet, cbackLeft: (){dispatchSheet(optionType: 5);})
-                ],
-              )
-          ),
-      );
-  }
-}
-  // 遍历 数据，填充  --更多列表
-List<Widget> moreFillData(data, cback, context){
-    List<Widget> list = [];//先建一个数组用于存放循环生成的widget
-    for(var item in data){
-        String roleName = item['roleName'];
-        list.add(
-          Container(
-            child: Container(
-            decoration: new BoxDecoration(
-            ),
-            child: ListTile(
-                selected: true,
-                // enabled: item['flag'] == 0 ? true : false,
-                title: Text( '($roleName)' + item['userName'], textAlign: TextAlign.center, style: TextStyle(color: Color.fromRGBO(173, 216, 255, 1)),),
-                onTap: () async {
-                  cback(newUserId: item['userId'], optionType: 4 ); //同意退单
-                  Navigator.pop(context);
-                }
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('退单',style: TextStyle(fontSize: _adapt.setFontSize(18))),
+          centerTitle: true,
+          actions: <Widget>[
+            Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(right: _adapt.setWidth(15)),
+              height: 30,
+              child: Container(
+                child: GestureDetector(
+                  onTap: (){
+                    pageMoreModalList();
+                  },
+                  child: Text('更多',style: TextStyle(color: Color.fromRGBO(90, 166, 255, 1))),
+                )
               )
             )
+          ],
+          backgroundColor: Colors.transparent
+        ),
+        body:  Column(
+          children: <Widget>[
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, //居左
+                  children: <Widget>[
+                    Container( //报修人/抄送人/处理岗位/处理人
+                      child: Column(children: <Widget>[
+                        ListBarComponents(name: '地点', value: pageData['areaName']),
+                        SplitLine(),
+                        ListBarComponents(name: '时间', value: pageData['addTime']),
+                        SplitLine(),
+                        ListBarComponents(name: '报修人', value: reporter, ishidePhone: false, tel: pageData['sendUserPhone']),
+                        SplitLine(),
+                        ListBarComponents(name: '优先级', value: priorityName),
+                        SplitLine(),
+                      ]),
+                      height: _adapt.setHeight(195),
+                      width: double.infinity,
+                      color: module_background_color,
+                      padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
+                      margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
+                    ),
+                    CopierItem(clickCB: _getCopierID),
+                    Offstage(
+                      offstage: pageData["deviceName"] == null || pageData["deviceName"] == "",
+                      child: ListItem(title: '设备', content: pageData["deviceName"] == null || pageData["deviceName"] == "" ? "暂无" : pageData["deviceName"]),
+                    ),
+                    MultipleRowTexts(name:'内容', value: pageData['taskContent']),
+                    Container(
+                      child: Row(children: <Widget>[
+                        Expanded(
+                          child: Text('拍照需求', textAlign: TextAlign.left, style: TextStyle(color: white_name_color)),
+                          flex: 1,
+                        ),
+                        Expanded(
+                          child: Text(taskPhotoName,  textAlign: TextAlign.right, style: TextStyle(color: white_color)),
+                          flex: 1,
+                        ),
+                      ]),
+                      padding: EdgeInsets.only(left: _adapt.setWidth(15), right: _adapt.setWidth(15)),
+                      margin: EdgeInsets.only(top: _adapt.setHeight(8)),
+                      color: module_background_color,
+                      width: double.infinity,
+                      height: _adapt.setHeight(45),
+                    ),
+                    Offstage(
+                      offstage: pageData['remarks'] == "",
+                      child: MultipleRowTexts(name:'备注', value: pageData['remarks'] == null ? '': pageData['remarks']),
+                    ),
+                    MultipleRowTexts(name:'退单原因', value: pageData['back'] == null ? '': pageData['back']),
+                    Container(
+                      child: Text('工单号: ' + (taskId > 0 ? taskId : '').toString(), style: TextStyle(color: white_name_color)),
+                      margin: EdgeInsets.only(top: _adapt.setHeight(19), bottom: _adapt.setHeight(20)),
+                      padding: EdgeInsets.only(left: _adapt.setWidth(15)),
+                    ),
+                  ]
+                ),
+              ),
+            ),
+            ButtonsComponents(leftName: '驳回', rightName:'同意',cbackRight: pageModalBottomSheet, cbackLeft: (){dispatchSheet(optionType: 5);})
+          ],
+        )
+      ),
+    );
+  }
+}
+// 遍历 数据，填充  --更多列表
+List<Widget> moreFillData(data, cback, context){
+  List<Widget> list = [];//先建一个数组用于存放循环生成的widget
+  for(var item in data){
+    String roleName = item['roleName'];
+    list.add(
+      Container(
+        child: Container(
+          decoration: new BoxDecoration(
           ),
-        );
-    }
-    return list;
+          child: ListTile(
+            selected: true,
+            // enabled: item['flag'] == 0 ? true : false,
+            title: Text( '($roleName)' + item['userName'], textAlign: TextAlign.center, style: TextStyle(color: Color.fromRGBO(173, 216, 255, 1)),),
+            onTap: () async {
+              cback(newUserId: item['userId'], optionType: 4 ); //同意退单
+              Navigator.pop(context);
+            }
+          )
+        )
+      ),
+    );
+  }
+  return list;
 }

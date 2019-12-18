@@ -36,7 +36,7 @@ class _ApprovedState extends State<Approved> {
     getLocalStorage('userId').then((value){
       setState(() {
         userId = int.parse(value);
-        dateString = getCurrentDay();
+        dateString = getCurrentTime(timeParams: 2);
       });
       this.getPageData();
     });
@@ -79,11 +79,11 @@ class _ApprovedState extends State<Approved> {
   // 获取未读数据列表
   void getUnreadList(){
     var params = {
-        'userId': userId,
-        'submodelId': 2,
-        'msgType': 1,
-        'msgIsread': 0,
-        'msgStatus': 0 // 200-我的处理;201-待审批;202-审批中;203-管理员已审批；204-普通员工已同意]
+      'userId': userId,
+      'submodelId': 2,
+      'msgType': 1,
+      'msgIsread': 0,
+      'msgStatus': 0 // 200-我的处理;201-待审批;202-审批中;203-管理员已审批；204-普通员工已同意]
     };
     if (widget.type == '1') {
       params['msgStatus'] = 203;
@@ -93,30 +93,30 @@ class _ApprovedState extends State<Approved> {
     // 获取未读列表
     getAllWorksStatus(params).then((data){
       if (data != null && data is List) {
-          setState(() {
-            unreadStatus = false;
-            unreadList = data;
-          });
-          formatUnreadList();
+        setState(() {
+          unreadStatus = false;
+          unreadList = data;
+        });
+        formatUnreadList();
       }
     });
   }
   // 转换未读数据
   void formatUnreadList(){
-   if (pageData.length == 0 || unreadList.length == 0) {
+    if (pageData.length == 0 || unreadList.length == 0) {
       return;
     }
     List list = [];
     pageData.forEach((item){
-        item['isRead'] = false;
-        item['msg_id'] = 0;
-        unreadList.forEach((itemx){
-          if (item['Id'] == int.parse(itemx['msg_ext_id'])) {
-            item['isRead'] = true;
-            item['msg_id'] = itemx['msg_id'];
-          }
-        });
-        list.add(item);
+      item['isRead'] = false;
+      item['msg_id'] = 0;
+      unreadList.forEach((itemx){
+        if (item['Id'] == int.parse(itemx['msg_ext_id'])) {
+          item['isRead'] = true;
+          item['msg_id'] = itemx['msg_id'];
+        }
+      });
+      list.add(item);
     });
     setState(() {
       pageData = list;
@@ -138,8 +138,8 @@ class _ApprovedState extends State<Approved> {
       }
     });
     Navigator.push(context, MaterialPageRoute(
-        builder: (context) => ApprovalPendingDetail(id: id, type: widget.type)
-      ));
+      builder: (context) => ApprovalPendingDetail(id: id, type: widget.type)
+    ));
   }
   // 分页
   Future _onload() async {
@@ -164,46 +164,46 @@ class _ApprovedState extends State<Approved> {
     var _adapt = SelfAdapt.init(context);
     String countName =  '共' + pageData.length.toString() + '单';
     return Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/background.png'),
-            fit: BoxFit.cover
-          )
-        ),
-        child: Scaffold(
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/background.png'),
+          fit: BoxFit.cover
+        )
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('已审批', style: TextStyle(fontSize: 18),),
+          centerTitle: true,
           backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text('已审批', style: TextStyle(fontSize: 18),),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            actions: <Widget>[
-              // 时间组件占位
-              PrivateDatePrick(change: datePrickChange)
-            ],
-          ),
-          body: Column(
-            children: <Widget>[
-              Container(
-                alignment: Alignment.topLeft,
-                margin: EdgeInsets.fromLTRB(_adapt.setWidth(15), _adapt.setHeight(8), _adapt.setWidth(15), 0),
-                child: Text( countName, style: TextStyle(color: Color.fromRGBO(165, 165, 165, 1), fontSize: _adapt.setFontSize(12))),
-              ),
-              Expanded(
-                child: EasyRefresh(
-                  onLoad: _onload,
-                  onRefresh: _refresh,
-                  child: ListView.builder(
-                    itemCount: pageData.length,
-                    itemBuilder: (context, index) {
-                      var item = pageData[index];
-                      return ListItem(data: item, clickCback: this.listClick, isShowImg: true);
-                    },
-                  )
-                ),
-              )
-            ],
-          )
+          actions: <Widget>[
+            // 时间组件占位
+            PrivateDatePrick(change: datePrickChange)
+          ],
         ),
+        body: Column(
+          children: <Widget>[
+            Container(
+              alignment: Alignment.topLeft,
+              margin: EdgeInsets.fromLTRB(_adapt.setWidth(15), _adapt.setHeight(8), _adapt.setWidth(15), 0),
+              child: Text( countName, style: TextStyle(color: Color.fromRGBO(165, 165, 165, 1), fontSize: _adapt.setFontSize(12))),
+            ),
+            Expanded(
+              child: EasyRefresh(
+                onLoad: _onload,
+                onRefresh: _refresh,
+                child: ListView.builder(
+                  itemCount: pageData.length,
+                  itemBuilder: (context, index) {
+                    var item = pageData[index];
+                    return ListItem(data: item, clickCback: this.listClick, isShowImg: true);
+                  },
+                )
+              ),
+            )
+          ],
+        )
+      ),
     );
   }
 }

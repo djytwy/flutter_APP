@@ -1,7 +1,5 @@
 // 其他人的工单
-import 'package:app_tims_hotel/pages/home/scheduling.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_easyrefresh/bezier_circle_header.dart';
 import '../../services/pageHttpInterface/MyTask.dart';
 import '../../utils/util.dart';
 import 'dart:convert';
@@ -14,10 +12,11 @@ import './view/PrivateDatePrick.dart';
 import '../../components/workOrderItems.dart';
 
 class OthersWorkOrderList extends StatefulWidget {
-  OthersWorkOrderList({Key key, this.taskType, this.userId, this.userName}) : super(key: key);
+  OthersWorkOrderList({Key key, this.taskType, this.userId, this.userName, this.dateString}) : super(key: key);
   final taskType;
   final userId;
   final String userName;
+  final String dateString;
   @override
   _OthersWorkOrderList createState() => _OthersWorkOrderList();
 }
@@ -27,7 +26,7 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
   Map warningMap = { 1:'低', 2:'中' ,3:'高'};   // 紧急程度
   List statusList = ['处理中', '新建' ,'已完成', '待验收', '退单中', '无法处理', '挂起'];   // 任务状态列表 
   String itemsString = '''["全部状态","处理中","已完成","待验收","退回中","无法处理","挂起"]''';  
-  Map pickData = {
+  Map pickData = {            // 工单的筛选状态
       '全部状态': null,
       '处理中': 0,
       '已完成': 2,
@@ -50,6 +49,7 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
     super.initState();
     setState(() {
       userName = widget.userName;
+      dateString = widget.dateString;
     });
     getPageData();
   }
@@ -59,7 +59,8 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
       'userId': widget.userId,
       'pageNum': pageNum,
       'pageSize': pageSize,
-      'taskType': widget.taskType == null ? 0 : widget.taskType, //任务类型 0 及时工单 1巡检 2维保
+      'taskType': widget.taskType == null ? 0 : widget.taskType, //任务类型 0 即时工单 1巡检 2维保
+      'dateString': dateString
     };
     if (pageNum > 1 && total < pageNum * pageSize) {
       pageNum -=1;
@@ -147,7 +148,10 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
                 title: Text('$userName的工单',style: TextStyle(fontSize: _adapt.setFontSize(18))),
                 actions: <Widget>[
                   // 时间组件占位
-                  PrivateDatePrick(change: datePrickChange)
+                  PrivateDatePrick(
+                    change: datePrickChange,
+                    defaultDateString: dateString,
+                  )
                 ],
               ),
               floatingActionButton: Offstage(
@@ -181,61 +185,60 @@ class _OthersWorkOrderList extends State<OthersWorkOrderList> {
                 ),
               ),
               body: Container(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Container(
-                            width: _adapt.setWidth(120),
-                            margin: EdgeInsets.only(left: _adapt.setWidth(15)),
-                            child: FlatButton(
-                              child: Row(
-                                children: <Widget>[
-                                  Expanded(
-                                    flex: 4,
-                                    child: Text(status, style: TextStyle(color: Colors.white70)),
-                                  ),
-                                  Expanded(
-                                    flex: 1,
-                                    child: Icon(
-                                      Icons.arrow_drop_down,
-                                      color: Colors.lightBlue,
-                                    )
-                                  )
-                                ]
-                              ),
-                              onPressed: (){
-                                setState(() {
-                                  floatingIsShow = true;
-                                });
-                                showPicker(context, itemsString);
-                              },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Container(
+                      width: _adapt.setWidth(120),
+                      margin: EdgeInsets.only(left: _adapt.setWidth(15)),
+                      child: FlatButton(
+                        child: Row(
+                          children: <Widget>[
+                            Expanded(
+                              flex: 4,
+                              child: Text(status, style: TextStyle(color: Colors.white70)),
                             ),
-                          ),
-                          Expanded(
-                            child: EasyRefresh(
-                              onLoad: _onload,
-                              onRefresh: _refresh,
-                              child: ListView.builder(
-                                controller: _controller,
-                                itemCount: pageData.length,
-                                itemBuilder: (context, index) {
-                                  return WorkOrderItem(
-                                    waringMsg: warningMap[pageData[index]["priority"]],
-                                    content: pageData[index]["taskContent"],
-                                    fontSize: 12,
-                                    place: pageData[index]["areaName"],
-                                    status: statusList[pageData[index]["taskState"]],
-                                    time: _converTime(pageData[index]["addTime"]),
-                                    orderID: pageData[index]["ID"],
-                                    isSkip: false,
-                                  );
-                                }
+                            Expanded(
+                              flex: 1,
+                              child: Icon(
+                                Icons.arrow_drop_down,
+                                color: Colors.lightBlue,
                               )
                             )
-                          )
-                        ]
-                      ) 
+                          ]
+                        ),
+                        onPressed: (){
+                          setState(() {
+                            floatingIsShow = true;
+                          });
+                          showPicker(context, itemsString);
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: EasyRefresh(
+                        onLoad: _onload,
+                        onRefresh: _refresh,
+                        child: ListView.builder(
+                          controller: _controller,
+                          itemCount: pageData.length,
+                          itemBuilder: (context, index) {
+                            return WorkOrderItem(
+                              waringMsg: warningMap[pageData[index]["priority"]],
+                              content: pageData[index]["taskContent"],
+                              place: pageData[index].containsKey("areaName") ? pageData[index]["areaName"]: '无',
+                              status: statusList[pageData[index]["taskState"]],
+                              time: _converTime(pageData[index]["addTime"]),
+                              orderID: pageData[index]["ID"],
+                              isSkip: false,
+                            );
+                          }
+                        )
+                      )
                     )
+                  ]
+                )
+              )
           )
         );
   }

@@ -22,6 +22,8 @@ if (flutterVersionName == null) {
 }
 
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'com.mob.sdk'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 // 打包apk文件所需
@@ -45,7 +47,7 @@ android {
         versionName flutterVersionName
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         ndk {
-             //选择要添加的对应 cpu 类型的 .so 库。
+             //科大讯飞语音识别添加的对应 cpu 类型的 .so 库。
              abiFilters 'armeabi', 'armeabi-v7a', 'x86', 'x86_64', 'mips', 'mips64', 'arm64-v8a'       
         }
         manifestPlaceholders = [
@@ -67,16 +69,8 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            aaptOptions.cruncherEnabled=false
         }
     }
-
-    // debug
-    // buildTypes {
-    //     release {
-    //         signingConfig signingConfigs.debug
-    //     }
-    // }
 }
 
 flutter {
@@ -87,4 +81,41 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.3.20'
+}
+
+MobSDK {
+    appKey "2cac68f35ef1c"
+    appSecret "88479ad36e6a58c7a0dde798b27de341"
+
+    MobPush {
+        devInfo {
+            XIAOMI {
+                appId "2882303761518195968"
+                appKey "5791819546968"
+            }
+
+//            HUAWEI {
+//                appId "100215127"
+//            }
+//
+//            MEIZU {
+//                appId "112481"
+//                appKey "03dd70b9be434446a7255c8586e1725a"
+//            }
+
+//            FCM {
+//                //设置默认推送通知显示图标
+//                iconRes "@mipmap/default_ic_launcher"
+//            }
+//            OPPO {
+//                appKey "b61Da76NM74gsG0o8C484g8GO"
+//                appSecret "659C583033aE8Ffe45a0e867c70746Af"
+//            }
+//            VIVO {
+//                appId "11154"
+//                appKey "0afbe1b7-b850-4d45-8cee-c57cceff652e"
+//            }
+        }
+    }
 }

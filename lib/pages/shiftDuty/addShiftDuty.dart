@@ -107,98 +107,98 @@ class _AddShiftDutyState extends State<AddShiftDuty> {
   Widget build(BuildContext context) {
     var _adapt = SelfAdapt.init(context);
     return Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage('assets/images/background.png'),
-            fit: BoxFit.cover
-          )
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/background.png'),
+          fit: BoxFit.cover
+        )
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text('排班申请', style: TextStyle(fontSize: 18),),
+          centerTitle: true,
+          backgroundColor: Colors.transparent
         ),
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: Text('排班申请', style: TextStyle(fontSize: 18),),
-            centerTitle: true,
-            backgroundColor: Colors.transparent
-          ),
-          body: Column(
-            children: <Widget>[
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: <Widget>[
-                      Container(
-                        height: _adapt.setHeight(91),
-                        width: double.infinity,
-                        color: module_background_color,
-                        padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
-                        margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
-                        child: Column(
-                          children: <Widget>[
-                              ListBarComponents(name: '申请人', value: userName),
-                              SplitLine(),
-                              ListBarComponents(name: '申请人班次', value: proposerWorkName, rightClick:(){
-                                buttomPopuSheet(context, proposerDutyList, 2, (item, name){
-                                  setState(() {
-                                    proposerWorkName = name;
-                                    proposerWorkID = item['ID'];
-                                  });
-                                });
-                              } ),
-                          ],
-                        ),
+        body: Column(
+          children: <Widget>[
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: <Widget>[
+                    Container(
+                      height: _adapt.setHeight(91),
+                      width: double.infinity,
+                      color: module_background_color,
+                      padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
+                      margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
+                      child: Column(
+                        children: <Widget>[
+                          ListBarComponents(name: '申请人', value: userName),
+                          SplitLine(),
+                          ListBarComponents(name: '申请人班次', value: proposerWorkName, rightClick:(){
+                            buttomPopuSheet(context, proposerDutyList, 2, (item, name){
+                              setState(() {
+                                proposerWorkName = name;
+                                proposerWorkID = item['ID'];
+                              });
+                            });
+                          } ),
+                        ],
                       ),
-                      Container(
-                        height: _adapt.setHeight(91),
-                        width: double.infinity,
-                        color: module_background_color,
-                        padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
-                        margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
-                        child: Column(
-                          children: <Widget>[
-                              ListBarComponents(name: '换班人员', value: personName, rightClick:(){
-                                buttomPopuSheet(context, userList, 1, (item){
-                                  if (personId != item['userId']) {
-                                      setState(() {
-                                        personName = item['userName'];
-                                        personId = item['userId'];
-                                        shiftDutyWorkName = null;
-                                        shiftDutyWorkID = null;
-                                      });
-                                      this.getWorkList(item['userId']);
-                                  }
+                    ),
+                    Container(
+                      height: _adapt.setHeight(91),
+                      width: double.infinity,
+                      color: module_background_color,
+                      padding: EdgeInsets.only(left: _adapt.setWidth(15.0)),
+                      margin: EdgeInsets.only(top: _adapt.setHeight(8.0)),
+                      child: Column(
+                        children: <Widget>[
+                          ListBarComponents(name: '换班人员', value: personName, rightClick:(){
+                            buttomPopuSheet(context, userList, 1, (item){
+                              if (personId != item['userId']) {
+                                setState(() {
+                                  personName = item['userName'];
+                                  personId = item['userId'];
+                                  shiftDutyWorkName = null;
+                                  shiftDutyWorkID = null;
                                 });
-                              }),
-                              SplitLine(),
-                              ListBarComponents(name: '换班班次', value: shiftDutyWorkName, rightClick:(){
-                                if (personId == null) {
-                                  showTotast('请先选择换班人员！');
-                                }else{
-                                  buttomPopuSheet(context, shiftDutyList, 2, (item, name){
-                                    setState(() {
-                                      shiftDutyWorkName = name;
-                                      shiftDutyWorkID = item['ID'];
-                                    });
-                                  });
-                                }
-                              }),
-                          ],
-                        ),
+                                this.getWorkList(item['userId']);
+                              }
+                            });
+                          }),
+                          SplitLine(),
+                          ListBarComponents(name: '换班班次', value: shiftDutyWorkName, rightClick:(){
+                            if (personId == null) {
+                              showTotast('请先选择换班人员！');
+                            }else{
+                              buttomPopuSheet(context, shiftDutyList, 2, (item, name){
+                                setState(() {
+                                  shiftDutyWorkName = name;
+                                  shiftDutyWorkID = item['ID'];
+                                });
+                              });
+                            }
+                          }),
+                        ],
                       ),
-                      NoteEntry(title:'申请原因', change: (value){
-                          setState(() {
-                            description = value;
-                          });
-                      })
-                    ],
-                  ),
+                    ),
+                    NoteEntry(title:'申请原因', change: (value){
+                      setState(() {
+                        description = value;
+                      });
+                    })
+                  ],
                 ),
               ),
-              Container(
-                child: ButtonsComponents(leftName: '提交', cbackLeft: this.submit, rightShow: false,),
-              )
-            ],
-          )
-        ),
+            ),
+            Container(
+              child: ButtonsComponents(leftName: '提交', cbackLeft: this.submit, rightShow: false,),
+            )
+          ],
+        )
+      ),
     );
   }
 }

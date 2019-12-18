@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import './util.dart';
+
 Set dict = Set();
 bool loadingStatus = false;
 class Loading {
   // static dynamic ctx;
-  static void show(uri, {text = 'Loading'}) {
+  static void show(uri, {text = '加载中...'}) {
     if(CTX == null){
       return;
     }
@@ -20,42 +21,42 @@ class Loading {
       barrierDismissible: false,
       builder: (_) {
         return SimpleDialog(
-            backgroundColor: Colors.transparent,
-            children: <Widget>[
-                Container(
-                  child: new Center(
-                    child: Container(
-                      width: 120.0,
-                      height: 120.0,
-                      child: new Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xffffffff),
-                          borderRadius:BorderRadius.all(Radius.circular(8.0)),
+          backgroundColor: Colors.transparent,
+          children: <Widget>[
+            Container(
+              child: new Center(
+                child: Container(
+                  width: 120.0,
+                  height: 120.0,
+                  child: new Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xffffffff),
+                      borderRadius:BorderRadius.all(Radius.circular(8.0)),
+                    ),
+                    child: new Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        new CircularProgressIndicator(),
+                        new Padding(
+                          padding: const EdgeInsets.only(
+                            top: 20.0,
+                          ),
+                          child: Text('加载中...', style: new TextStyle(fontSize: 12.0, color: Colors.black87)),
                         ),
-                        child: new Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: <Widget>[
-                            new CircularProgressIndicator(),
-                            new Padding(
-                              padding: const EdgeInsets.only(
-                                top: 20.0,
-                              ),
-                              child: Text('loading...', style: new TextStyle(fontSize: 12.0, color: Colors.black87)),
-                              ),
-                          ]
-                        ),
-                      ),
+                      ]
                     ),
                   ),
-                )
-            ],
+                ),
+              ),
+            )
+          ],
         );
       }
     );
   }
 
-  static void cancel(uri) async{
+  static Future cancel(uri) async {
     await Future.delayed(Duration(milliseconds: 100));
     if( CTX == null){
       return;
@@ -69,8 +70,3 @@ class Loading {
     }
   }
 }
-// // http/index.dart
-
-// // onReuest: Loading.show(options.uri, '正在加速中...');
-// // onReponse: Loading.cancel(resp.request.uri);
-// // onError: Loading.cancel(error.request.uri );

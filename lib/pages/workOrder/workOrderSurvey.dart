@@ -24,19 +24,20 @@ class _WorkOrderSurvey extends State<WorkOrderSurvey> {
   String dateString; //日期字符串
   String choiceClick='工单概况'; // 工单进度、工单概况的按钮 
   var taskType;
+
   @override
   void initState(){
     super.initState();
     setState(() {
       taskType = widget.taskType is int ? widget.taskType : int.parse(widget.taskType);
-      dateString = getCurrentDay();
+      dateString = getCurrentTime(timeParams: 2);
     });
     getInitData();
   }
   // 初始化 获取数据
   void getInitData(){
     var data = {
-      'taskType': taskType, //任务类型 0 及时工单 1巡检 2维保
+      'taskType': taskType, //任务类型 0 即时工单 1巡检 2维保
     };
     if (searchValue != null) {
       data['keyWord'] = searchValue;
@@ -164,7 +165,12 @@ class _WorkOrderSurvey extends State<WorkOrderSurvey> {
                                           child: GestureDetector(
                                             onTap: (){
                                                  Navigator.push(context, MaterialPageRoute(
-                                                  builder: (context) => OthersWorkOrderList(userId: item['user_id'], userName: item['user_name'], taskType: taskType)
+                                                  builder: (context) => OthersWorkOrderList(
+                                                    userId: item['user_id'],
+                                                    userName: item['user_name'],
+                                                    taskType: taskType,
+                                                    dateString: dateString,
+                                                  )
                                                 ));
                                             },
                                               child: Column(
@@ -188,7 +194,7 @@ class _WorkOrderSurvey extends State<WorkOrderSurvey> {
                                                       children: <Widget>[
                                                         Expanded(
                                                           flex: 1,
-                                                          child: Text('今日派单 ' + item['todayCount'].toString(), style: TextStyle(color: white_name_color, fontSize: _adapt.setFontSize(15))),
+                                                          child: Text('派单 ' + item['todayCount'].toString(), style: TextStyle(color: white_name_color, fontSize: _adapt.setFontSize(15))),
                                                         ),
                                                         Expanded(
                                                           flex: 1,

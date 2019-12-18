@@ -1,7 +1,7 @@
 import 'dart:async';
 import '../../config/serviceUrl.dart';
 import '../ajax.dart';
-// 获取及时工单和巡检/维保的数据
+// 获取即时工单和巡检/维保的数据
 Future getTaskCount(token,userId,date) async {
   var data = await baseAjax(url: servicePath['getTaskCountByTaskType'], params:  {'dateString':date,'userId':userId});
   if (data != null) {
